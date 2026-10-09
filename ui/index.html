@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SICAS Control Panel</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--ink:#1c2128;--mute:#5b6572;--line:#d9dee5;--accent:#2457d6;--accent-ink:#fff;--ok:#1a7f45;--bad:#b42318;--warn:#a15c00;--code:#0f141a;--code-ink:#d6e2f0}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0f1318;--card:#171c23;--ink:#e6eaf0;--mute:#98a3b3;--line:#2a323d;--accent:#6c97ff;--accent-ink:#0b1020;--ok:#4cc380;--bad:#ff7b6e;--warn:#e6a23c;--code:#0a0d11}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 system-ui,Segoe UI,sans-serif;padding-bottom:300px}
+header{display:flex;align-items:center;gap:16px;padding:12px 20px;background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5;flex-wrap:wrap}
+header h1{font-size:16px;margin:0}
+nav{display:flex;gap:4px;flex-wrap:wrap}
+nav button{background:none;border:0;padding:8px 14px;border-radius:6px;color:var(--mute);font:inherit;cursor:pointer}
+nav button.on{background:var(--accent);color:var(--accent-ink)}
+main{max-width:1000px;margin:0 auto;padding:20px 16px}
+section.tab{display:none}section.tab.on{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-bottom:16px}
+.card h2{font-size:15px;margin:0 0 4px}
+.card .sub{color:var(--mute);margin:0 0 12px}
+.step{display:flex;gap:10px;align-items:baseline}
+.num{background:var(--accent);color:var(--accent-ink);border-radius:50%;min-width:22px;height:22px;display:inline-grid;place-items:center;font-size:12px;font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px 14px;margin:10px 0}
+label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--mute)}
+input,select{font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);min-width:0}
+label.chk{flex-direction:row;align-items:center;gap:6px;color:var(--ink)}
+label.chk input{width:auto}
+button.btn{font:inherit;padding:7px 14px;border-radius:6px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button.danger{color:var(--bad);border-color:var(--bad)}
+button:disabled{opacity:.45;cursor:not-allowed}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.est{background:var(--bg);border:1px dashed var(--line);border-radius:8px;padding:8px 12px;margin:10px 0;display:flex;gap:18px;flex-wrap:wrap}
+.est b{font-size:15px}
+.est span.l{display:block;font-size:11px;color:var(--mute);text-transform:uppercase;letter-spacing:.04em}
+ul.chk{list-style:none;margin:0;padding:0}
+ul.chk li{display:flex;gap:10px;align-items:center;padding:5px 0;border-bottom:1px solid var(--line)}
+ul.chk li:last-child{border:0}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--mute);flex:none}
+.dot.ok{background:var(--ok)}.dot.bad{background:var(--bad)}.dot.opt{background:var(--warn)}
+.det{color:var(--mute);font-size:12px;margin-left:auto;text-align:right}
+.tag{font-size:11px;padding:1px 7px;border-radius:10px;border:1px solid var(--line);color:var(--mute)}
+.note{font-size:12px;color:var(--mute)}
+.warn{color:var(--warn)}
+table{border-collapse:collapse;width:100%}
+td,th{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-size:12px;color:var(--mute);font-weight:600}
+a{color:var(--accent)}
+#dock{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:2px solid var(--line);z-index:9;max-height:290px;display:flex;flex-direction:column}
+#dock .bar{display:flex;gap:12px;align-items:center;padding:8px 16px;flex-wrap:wrap}
+#prog{flex:1;min-width:140px;height:8px;background:var(--bg);border-radius:4px;overflow:hidden;border:1px solid var(--line)}
+#prog i{display:block;height:100%;width:0;background:var(--accent)}
+#log{margin:0;background:var(--code);color:var(--code-ink);font:12px/1.45 Consolas,monospace;padding:8px 16px;overflow:auto;flex:1;min-height:90px;white-space:pre-wrap;word-break:break-word}
+.st-running{color:var(--accent)}.st-done{color:var(--ok)}.st-failed,.st-stopped{color:var(--bad)}
+code{background:var(--bg);padding:1px 5px;border-radius:4px}
+</style>
+</head>
+<body>
+<header>
+  <h1>SICAS Control Panel</h1>
+  <nav id="nav">
+    <button data-t="setup" class="on">Setup &amp; checks</button>
+    <button data-t="test">Test run</button>
+    <button data-t="main">Main run</button>
+    <button data-t="results">Results</button>
+    <button data-t="jobs">Job history</button>
+  </nav>
+</header>
+<main>
+
+<!-- ============================ SETUP ============================ -->
+<section class="tab on" id="t-setup">
+  <div class="card">
+    <h2>Environment checks</h2>
+    <p class="sub">Everything the project needs on this machine. A red dot means a run that depends on it will fail; amber means optional. Use the buttons to fix items in one click.</p>
+    <div class="row" style="margin-bottom:8px"><button class="btn" id="refresh">Re-check now</button><span class="note" id="rootnote"></span></div>
+    <ul class="chk" id="allchecks"></ul>
+  </div>
+  <div class="card">
+    <h2>Anthropic API key <span class="tag">optional</span></h2>
+    <p class="sub">Only needed to run with <code>anthropic:&lt;model&gt;</code> instead of the local Ollama model. Held in memory by this panel only (never written to disk) and cleared when you close it.</p>
+    <div class="row"><input id="apikey" type="password" placeholder="sk-ant-..." style="width:320px" autocomplete="off"><button class="btn" id="savekey">Use for this session</button><button class="btn" id="clearkey">Clear</button></div>
+  </div>
+  <div class="card">
+    <h2>Before any long run</h2>
+    <ul>
+      <li>Plug the laptop in and set <b>Sleep: never</b> (Settings → System → Power). A sleeping PC silently pauses the run.</li>
+      <li>Close heavy apps. Local inference uses all CPU cores; a 15 GB RAM machine should stay under ~70% memory use.</li>
+      <li>Only one run at a time is allowed from this panel. Stopping a run is safe; finished generations are already saved in <code>runs/&lt;name&gt;/archive</code>.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============================ TEST RUN ============================ -->
+<section class="tab" id="t-test">
+  <div class="card">
+    <h2>Test run — offline demo with the mock LLM</h2>
+    <p class="sub">Proves the pipeline works end to end (sandbox, gate, archive, dashboard). No model, no internet, no cost. <b class="warn">These numbers are not research results.</b></p>
+    <b>Must be ready first</b>
+    <ul class="chk" id="pre-test"></ul>
+  </div>
+
+  <div class="card">
+    <div class="step"><span class="num">1</span><h2>Check the environment</h2></div>
+    <p class="sub"><code>python -m sicas doctor</code> — shows Python, Docker and which sandbox will be used.</p>
+    <div class="est"><div><span class="l">Estimated time</span><b>~5 seconds</b></div></div>
+    <button class="btn primary" data-run="doctor-test">Run check</button>
+  </div>
+
+  <div class="card">
+    <div class="step"><span class="num">2</span><h2>Run the automated tests</h2></div>
+    <p class="sub"><code>python -m pytest tests -q</code> — 36 tests including the sandbox isolation proofs (no network inside the sandbox, read-only mount).</p>
+    <div class="row">
+      <label class="chk"><input type="checkbox" id="pytest-fast"> Fast subset only (skips end-to-end tests)</label>
+    </div>
+    <div class="est"><div><span class="l">Estimated time</span><b id="est-pytest">~2.5 min</b></div><div><span class="l">Measured here</span><b>149 s for the full suite</b></div></div>
+    <button class="btn primary" data-run="pytest">Run tests</button>
+  </div>
+
+  <div class="card">
+    <div class="step"><span class="num">3</span><h2>One self-improvement run</h2></div>
+    <p class="sub"><code>python -m sicas evolve --method … --out runs/demo</code> — writes result.json, the archive and a dashboard.</p>
+    <div class="grid">
+      <label>Method<select id="t3-method"><option>gated</option><option>fixed</option><option>reflexion</option><option>ungated</option></select></label>
+      <label>Generations<input id="t3-gen" type="number" min="0" value="6"></label>
+      <label>Candidates / generation<input id="t3-cand" type="number" min="1" value="3"></label>
+      <label>Seed<input id="t3-seed" type="number" min="0" value="0"></label>
+      <label>Output folder<input id="t3-out" value="runs/demo"></label>
+      <label>Seconds per agent run<input id="t3-sec" type="number" step="0.1" min="0.1" value="2.5"></label>
+    </div>
+    <div class="est" id="est-t3"></div>
+    <div class="row"><button class="btn primary" data-run="evolve-test">Start run</button><span class="note">Task set: built-in toy tasks (8 train / 8 val / 8 test / 4 regression).</span></div>
+  </div>
+
+  <div class="card">
+    <div class="step"><span class="num">4</span><h2>Compare all methods</h2></div>
+    <p class="sub"><code>python -m sicas experiment …</code> — every method × several seeds, then a results table in <code>summary.md</code>.</p>
+    <div class="grid">
+      <label>Seeds<input id="t4-seeds" type="number" min="1" value="3"></label>
+      <label>Generations<input id="t4-gen" type="number" min="0" value="8"></label>
+      <label>Candidates / generation<input id="t4-cand" type="number" min="1" value="4"></label>
+      <label>Output folder<input id="t4-out" value="runs/exp"></label>
+      <label>Seconds per agent run<input id="t4-sec" type="number" step="0.1" min="0.1" value="2.5"></label>
+    </div>
+    <div class="row">
+      <label class="chk"><input type="checkbox" class="t4m" value="fixed" checked> fixed</label>
+      <label class="chk"><input type="checkbox" class="t4m" value="reflexion" checked> reflexion</label>
+      <label class="chk"><input type="checkbox" class="t4m" value="ungated" checked> ungated</label>
+      <label class="chk"><input type="checkbox" class="t4m" value="gated" checked> gated</label>
+      <button class="btn" id="t4-smoke">Smoke preset (1 seed, 4 gens)</button>
+    </div>
+    <div class="est" id="est-t4"></div>
+    <button class="btn primary" data-run="experiment-test">Start comparison</button>
+  </div>
+  <p class="note">Roll back or rebuild a dashboard for any finished run from the <b>Results</b> tab.</p>
+</section>
+
+<!-- ============================ MAIN RUN ============================ -->
+<section class="tab" id="t-main">
+  <div class="card">
+    <h2>Main run — real model, real tasks</h2>
+    <p class="sub">The experiment whose numbers go in the paper: HumanEval+ subset (60 tasks: 20 train / 15 val / 15 test / 10 regression), code executed in the Docker sandbox.</p>
+    <div class="grid">
+      <label>Model backend
+        <select id="m-backend">
+          <option value="ollama:qwen2.5-coder:1.5b">Local · Ollama qwen2.5-coder:1.5b (free)</option>
+          <option value="ollama:qwen2.5-coder:7b">Local · Ollama qwen2.5-coder:7b (slow on CPU)</option>
+          <option value="anthropic:claude-haiku-4-5-20251001">API · Claude Haiku 4.5 (paid)</option>
+        </select></label>
+      <label>Temperature<input id="m-temp" type="number" step="0.1" min="0" max="2" value="0.3"></label>
+      <label>Seconds per agent run<input id="m-sec" type="number" step="0.5" min="0.5" value="10"></label>
+    </div>
+    <p class="note" id="m-secnote"></p>
+    <b>Must be ready first</b>
+    <ul class="chk" id="pre-main"></ul>
+    <p class="note">Missing a requirement? Use the fix buttons above, or <b>Setup &amp; checks</b>. Run buttons unlock once the required items are green.</p>
+  </div>
+
+  <div class="card">
+    <div class="step"><span class="num">1</span><h2>Prepare data <span class="tag">once</span></h2></div>
+    <p class="sub">Build the HumanEval+ dataset and the 60-task subset (drops any task whose reference solution fails inside the sandbox).</p>
+    <div class="est"><div><span class="l">Estimated time</span><b>~5–10 min</b></div><div><span class="l">Needs</span><b>internet + evalplus</b></div></div>
+    <div class="row">
+      <button class="btn" data-run="pip_evalplus">Install evalplus</button>
+      <button class="btn" data-run="convert_dataset">Convert dataset</button>
+      <button class="btn" data-run="make_subset">Make 60-task subset</button>
+      <button class="btn" data-run="pull_model">Pull model</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="step"><span class="num">2</span><h2>Small trial <span class="tag">do this first</span></h2></div>
+    <p class="sub"><code>sicas evolve --method fixed</code> — one baseline measurement. Check <code>result.json</code> pass rates before launching anything long.</p>
+    <div class="grid">
+      <label>Output folder<input id="m2-out" value="runs/trial_fixed"></label>
+    </div>
+    <div class="est" id="est-m2"></div>
+    <button class="btn primary" data-run="trial" data-needs="main">Start small trial</button>
+  </div>
+
+  <div class="card">
+    <div class="step"><span class="num">3</span><h2>Full experiment</h2></div>
+    <p class="sub"><code>sicas experiment</code> — all methods × seeds. Leave the PC on and plugged in.</p>
+    <div class="grid">
+      <label>Seeds<input id="m3-seeds" type="number" min="1" value="3"></label>
+      <label>Generations<input id="m3-gen" type="number" min="0" value="5"></label>
+      <label>Candidates / generation<input id="m3-cand" type="number" min="1" value="2"></label>
+      <label>Budget USD (API only, per method per seed)<input id="m3-budget" type="number" step="0.5" min="0" placeholder="e.g. 10"></label>
+      <label>Output folder<input id="m3-out" value="runs/he_real"></label>
+    </div>
+    <div class="row">
+      <label class="chk"><input type="checkbox" class="m3m" value="fixed" checked> fixed</label>
+      <label class="chk"><input type="checkbox" class="m3m" value="reflexion" checked> reflexion</label>
+      <label class="chk"><input type="checkbox" class="m3m" value="ungated" checked> ungated</label>
+      <label class="chk"><input type="checkbox" class="m3m" value="gated" checked> gated</label>
+    </div>
+    <div class="est" id="est-m3"></div>
+    <button class="btn primary" data-run="full" data-needs="main">Start full experiment</button>
+  </div>
+
+  <div class="card">
+    <div class="step"><span class="num">4</span><h2>Ablations</h2></div>
+    <p class="sub">The gated method with one safeguard switched off (or one scaffold component allowed to change). Uses the generations / candidates / seeds / model above in step 3.</p>
+    <div class="grid">
+      <label>Question
+        <select id="m4-kind">
+          <option value="no_val">Is the validation check needed? (--no-val)</option>
+          <option value="no_regression">Is the regression suite needed? (--no-regression)</option>
+          <option value="no_tamper">Is tamper enforcement needed? (--no-tamper)</option>
+          <option value="prompt">Which component transfers? prompt only</option>
+          <option value="tools">… tools only</option>
+          <option value="skills">… skills only</option>
+          <option value="retrieval">… retrieval only</option>
+          <option value="memory">… memory only</option>
+        </select></label>
+      <label>Output folder<input id="m4-out" value="runs/ablate_no_val"></label>
+    </div>
+    <div class="est" id="est-m4"></div>
+    <button class="btn primary" data-run="ablation" data-needs="main">Start ablation</button>
+  </div>
+</section>
+
+<!-- ============================ RESULTS ============================ -->
+<section class="tab" id="t-results">
+  <div class="card">
+    <h2>Finished runs</h2>
+    <p class="sub">Everything under <code>runs/</code>. Dashboards open in a new tab.</p>
+    <div class="row" style="margin-bottom:8px"><button class="btn" id="reload-runs">Reload</button></div>
+    <div id="runs"></div>
+  </div>
+  <div class="card" id="viewer" style="display:none">
+    <div class="row"><h2 id="viewer-title" style="margin:0"></h2><button class="btn" id="viewer-close" style="margin-left:auto">Close</button></div>
+    <pre id="viewer-body" style="white-space:pre-wrap;overflow:auto;max-height:420px"></pre>
+  </div>
+</section>
+
+<!-- ============================ JOBS ============================ -->
+<section class="tab" id="t-jobs">
+  <div class="card"><h2>Job history</h2><p class="sub">Since this panel started. Logs are also saved to <code>runs/_ui_logs/</code>.</p><div id="joblist"></div></div>
+</section>
+</main>
+
+<div id="dock">
+  <div class="bar">
+    <b id="d-title">No job running</b>
+    <span id="d-status" class="note"></span>
+    <div id="prog"><i></i></div>
+    <span id="d-time" class="note"></span>
+    <button class="btn danger" id="d-stop" disabled>Stop</button>
+  </div>
+  <pre id="log">Output of the current job appears here.</pre>
+</div>
+
+<script>
+const TOKEN = "__TOKEN__";
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+async function api(path, body) {
+  const r = await fetch(path, {method: body ? "POST" : "GET", headers: {"X-Token": TOKEN, "Content-Type": "application/json"}, body: body ? JSON.stringify(body) : undefined});
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || r.statusText);
+  return j;
+}
+
+/* ---------- tabs ---------- */
+function showTab(t) {
+  $$("#nav button").forEach(b => b.classList.toggle("on", b.dataset.t === t));
+  $$("section.tab").forEach(s => s.classList.toggle("on", s.id === "t-" + t));
+  try { localStorage.setItem("sicas-tab", t); } catch (e) {}
+  if (t === "results") loadRuns();
+  if (t === "jobs") loadJobs();
+  loadStatus();
+}
+$$("#nav button").forEach(b => b.onclick = () => showTab(b.dataset.t));
+
+/* ---------- estimates ---------- */
+const SPLITS = {toy: {T: 8, V: 8, S: 8, R: 4}, he: {T: 20, V: 15, S: 15, R: 10}};
+// agent runs executed by one evolve() call; gated gets a (low, high) range because failed candidates exit early
+function runsFor(method, sp, G, C) {
+  const {T, V, S, R} = sp, post = R + S + V + R;
+  if (method === "fixed") return [post + T, post + T];
+  if (method === "reflexion") { const x = post + T + G * T; return [x, x]; }
+  if (method === "ungated") { const x = post + T + G * C * T; return [x, x]; }
+  const base = post + T + V + R, per = G * C;
+  return [base + per * (V + 0.3 * (R + T)), base + per * (V + R + T)];
+}
+const reflect = (method, G, C) => (method === "fixed" ? 0 : G * (method === "reflexion" ? 1 : C) * 1.5); // LLM-only calls, in run-equivalents
+function estimate(methods, seeds, sp, G, C, sec) {
+  let lo = 0, hi = 0, n = 0;
+  for (const m of methods) {
+    const [a, b] = runsFor(m, sp, m === "fixed" ? 0 : G, C), r = reflect(m, G, C);
+    lo += a + r; hi += b + r; n++;
+  }
+  return {lo: lo * seeds * sec, hi: hi * seeds * sec, runsLo: Math.round(lo * seeds), runsHi: Math.round(hi * seeds)};
+}
+function fmt(s) {
+  if (s < 90) return Math.round(s) + " s";
+  if (s < 5400) return Math.round(s / 60) + " min";
+  const h = s / 3600; return (h < 10 ? h.toFixed(1) : Math.round(h)) + " h";
+}
+function finishAt(s) { return new Date(Date.now() + s * 1000).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"}); }
+function estBox(el, e, note) {
+  const same = Math.abs(e.hi - e.lo) < 1;
+  el.innerHTML = `<div><span class="l">Estimated time</span><b>${same ? "~" + fmt(e.hi) : fmt(e.lo) + " – " + fmt(e.hi)}</b></div>
+    <div><span class="l">Agent runs</span><b>${same ? e.runsHi : e.runsLo + " – " + e.runsHi}</b></div>
+    <div><span class="l">If started now, done around</span><b>${finishAt(e.lo)}${same ? "" : " – " + finishAt(e.hi)}</b></div>
+    ${note ? `<div class="note" style="flex-basis:100%">${note}</div>` : ""}`;
+}
+const GATED_NOTE = "Gated runs can finish early because candidates that fail the cheap checks are rejected before the expensive ones.";
+const num = id => parseFloat($(id).value) || 0;
+const checked = cls => $$(cls).filter(c => c.checked).map(c => c.value);
+
+function updateEstimates() {
+  const m3 = $("#t3-method").value;
+  const e3 = estimate([m3], 1, SPLITS.toy, num("#t3-gen"), num("#t3-cand"), num("#t3-sec"));
+  estBox($("#est-t3"), e3, m3 === "gated" ? GATED_NOTE : "");
+  const e4 = estimate(checked(".t4m"), num("#t4-seeds"), SPLITS.toy, num("#t4-gen"), num("#t4-cand"), num("#t4-sec"));
+  estBox($("#est-t4"), e4, GATED_NOTE);
+
+  const sec = num("#m-sec");
+  estBox($("#est-m2"), estimate(["fixed"], 1, SPLITS.he, 0, 1, sec), "Matches the ~10 minutes in the project guide at 10 s per run.");
+  const G = num("#m3-gen"), C = num("#m3-cand"), S = num("#m3-seeds");
+  estBox($("#est-m3"), estimate(checked(".m3m"), S, SPLITS.he, G, C, sec), GATED_NOTE + " Estimates scale linearly with seconds per run — the biggest uncertainty on a throttling laptop CPU.");
+  estBox($("#est-m4"), estimate(["gated"], S, SPLITS.he, G, C, sec), "Ablations run the gated method only, for the seeds, generations and candidates set in step 3.");
+}
+$$("input,select").forEach(i => i.addEventListener("input", updateEstimates));
+
+/* ---------- checks ---------- */
+let CHECKS = {};
+const OPTIONAL = new Set(["evalplus", "anthropic", "apikey", "cpu", "image"]);
+const FIX_LABEL = {start_docker: "Start Docker Desktop", pull_model: "Pull model", convert_dataset: "Convert dataset", make_subset: "Make subset", pip_pytest: "Install", pip_evalplus: "Install", pip_anthropic: "Install"};
+function renderChecks(ul, ids, required) {
+  ul.innerHTML = "";
+  for (const id of ids) {
+    const c = CHECKS[id]; if (!c) continue;
+    const req = required.includes(id), cls = c.ok ? "ok" : (req ? "bad" : "opt");
+    const li = document.createElement("li");
+    li.innerHTML = `<span class="dot ${cls}"></span><span>${c.label}</span><span class="tag">${req ? "required" : "optional"}</span><span class="det">${c.detail || ""}</span>`;
+    if (!c.ok && c.fix) {
+      const b = document.createElement("button"); b.className = "btn"; b.textContent = FIX_LABEL[c.fix] || "Fix";
+      b.onclick = () => launch(c.fix, {title: b.textContent}); li.appendChild(b);
+    }
+    ul.appendChild(li);
+  }
+}
+const isApi = () => $("#m-backend").value.startsWith("anthropic");
+const is7b = () => $("#m-backend").value.includes("7b");
+const mainRequired = () => isApi() ? ["docker", "subset", "anthropic", "apikey"] : ["docker", "ollama", "subset"].concat(is7b() ? [] : ["model"]);
+function mainReady() { return mainRequired().every(id => CHECKS[id] && CHECKS[id].ok) && (isApi() || !is7b() || modelListed("qwen2.5-coder:7b")); }
+function modelListed(want) { return !!CHECKS.model && CHECKS.model.detail.split(", ").includes(want); }
+function renderAll() {
+  renderChecks($("#allchecks"), Object.keys(CHECKS), ["python", "docker", "ollama", "model", "subset", "pytest"]);
+  renderChecks($("#pre-test"), ["python", "docker", "pytest", "image", "disk"], ["python"]);
+  renderChecks($("#pre-main"), ["python", "docker", "image", "ollama", "model", "dataset", "subset", "anthropic", "apikey", "disk", "cpu"], mainRequired());
+  const ok = mainReady();
+  $$("[data-needs=main]").forEach(b => { b.disabled = !ok; b.title = ok ? "" : "Some required items above are not ready"; });
+}
+async function loadStatus() {
+  try { const s = await api("/api/status"); CHECKS = Object.fromEntries(s.checks.map(c => [c.id, c])); $("#rootnote").textContent = "Project: " + s.root; renderAll(); } catch (e) { console.warn(e); }
+}
+$("#refresh").onclick = loadStatus;
+$("#m-backend").addEventListener("change", () => {
+  const api_ = isApi(), big = $("#m-backend").value.includes("7b");
+  $("#m-sec").value = api_ ? 5 : big ? 45 : 10;
+  $("#m-secnote").textContent = api_ ? "API runs are network-bound, ~3–8 s per agent run, and billed per token — set a budget in step 3."
+    : big ? "The 7B model on CPU-only hardware is several times slower than the 1.5B model and needs more RAM; 45 s is a rough guess." : "Default 10 s per run is the figure from the project guide for the 1.5B model on CPU.";
+  renderAll(); updateEstimates();
+});
+$("#savekey").onclick = async () => { await api("/api/secret", {ANTHROPIC_API_KEY: $("#apikey").value}); $("#apikey").value = ""; loadStatus(); };
+$("#clearkey").onclick = async () => { await api("/api/secret", {ANTHROPIC_API_KEY: ""}); loadStatus(); };
+$("#t4-smoke").onclick = () => { $("#t4-seeds").value = 1; $("#t4-gen").value = 4; updateEstimates(); };
+
+/* ---------- launching jobs ---------- */
+const HE = "data/he_subset.jsonl";
+function mainBase() {
+  const p = {llm: $("#m-backend").value, tasks: HE, temperature: $("#m-temp").value};
+  return p;
+}
+function buildLaunch(which) {
+  const sec = num("#m-sec");
+  switch (which) {
+    case "doctor-test": return ["doctor", {title: "Environment check", est_seconds: 5}];
+    case "pytest": { const f = $("#pytest-fast").checked; return ["pytest", {fast: f, title: "Automated tests", est_seconds: f ? 15 : 150}]; }
+    case "evolve-test": { const m = $("#t3-method").value;
+      const e = estimate([m], 1, SPLITS.toy, num("#t3-gen"), num("#t3-cand"), num("#t3-sec"));
+      return ["evolve", {llm: "mock", tasks: "toy", method: m, generations: num("#t3-gen"), candidates: num("#t3-cand"), seed: num("#t3-seed"), out: $("#t3-out").value, title: "Test run · " + m, est_seconds: e.hi}]; }
+    case "experiment-test": { const ms = checked(".t4m"); if (!ms.length) throw new Error("Pick at least one method");
+      const e = estimate(ms, num("#t4-seeds"), SPLITS.toy, num("#t4-gen"), num("#t4-cand"), num("#t4-sec"));
+      return ["experiment", {llm: "mock", tasks: "toy", methods: ms.join(","), seeds: num("#t4-seeds"), generations: num("#t4-gen"), candidates: num("#t4-cand"), out: $("#t4-out").value, title: "Test comparison", est_seconds: e.hi}]; }
+    case "trial": { const e = estimate(["fixed"], 1, SPLITS.he, 0, 1, sec);
+      return ["evolve", {...mainBase(), method: "fixed", generations: 0, candidates: 1, seed: 0, out: $("#m2-out").value, title: "Main · small trial", est_seconds: e.hi}]; }
+    case "full": { const ms = checked(".m3m"); if (!ms.length) throw new Error("Pick at least one method");
+      const e = estimate(ms, num("#m3-seeds"), SPLITS.he, num("#m3-gen"), num("#m3-cand"), sec);
+      return ["experiment", {...mainBase(), methods: ms.join(","), seeds: num("#m3-seeds"), generations: num("#m3-gen"), candidates: num("#m3-cand"), budget_usd: $("#m3-budget").value, out: $("#m3-out").value, title: "Main · full experiment", est_seconds: e.hi}]; }
+    case "ablation": { const k = $("#m4-kind").value, flags = {};
+      const comp = ["no_val", "no_regression", "no_tamper"].includes(k) ? null : k;
+      if (!comp) flags[k] = true;
+      const e = estimate(["gated"], num("#m3-seeds"), SPLITS.he, num("#m3-gen"), num("#m3-cand"), sec);
+      return ["experiment", {...mainBase(), ...flags, components: comp || "", methods: "gated", seeds: num("#m3-seeds"), generations: num("#m3-gen"), candidates: num("#m3-cand"), budget_usd: $("#m3-budget").value, out: $("#m4-out").value, title: "Ablation · " + k, est_seconds: e.hi}]; }
+    default: return [which, {title: which}];
+  }
+}
+$("#m4-kind").addEventListener("change", e => { $("#m4-out").value = "runs/ablate_" + e.target.value; });
+$$("[data-run]").forEach(b => b.onclick = async () => {
+  try { const [kind, params] = buildLaunch(b.dataset.run); await launch(kind, params); } catch (e) { alert(e.message); }
+});
+async function launch(kind, params) {
+  try { const j = await api("/api/jobs", {kind, params}); watch(j.id); } catch (e) { alert(e.message); }
+}
+
+/* ---------- live job dock ---------- */
+let cur = null, since = 0, timer = null;
+function watch(id) { cur = id; since = 0; $("#log").textContent = ""; clearInterval(timer); tick(); timer = setInterval(tick, 1000); }
+async function tick() {
+  if (!cur) return;
+  let j; try { j = await api(`/api/jobs/${cur}?since=${since}`); } catch (e) { return; }
+  if (j.lines.length) {
+    const log = $("#log"), atEnd = log.scrollTop + log.clientHeight >= log.scrollHeight - 30;
+    log.textContent += j.lines.join("\n") + "\n"; since = j.n_lines;
+    if (atEnd) log.scrollTop = log.scrollHeight;
+  }
+  const running = j.status === "running", el = ((j.ended || Date.now() / 1000) - j.started);
+  $("#d-title").textContent = j.title;
+  $("#d-status").innerHTML = `<span class="st-${j.status}">${j.status}${j.code !== null && j.code !== undefined ? " (exit " + j.code + ")" : ""}</span>`;
+  const est = j.est_seconds;
+  $("#d-time").textContent = `elapsed ${fmt(el)}` + (est ? ` · est. total ${fmt(est)}` : "");
+  $("#prog i").style.width = (running ? (est ? Math.min(95, 100 * el / est) : 50) : (j.status === "done" ? 100 : 0)) + "%";
+  $("#d-stop").disabled = !running;
+  if (!running) { clearInterval(timer); timer = null; loadStatus(); loadRuns(); }
+}
+$("#d-stop").onclick = () => cur && api(`/api/jobs/${cur}/stop`, {});
+
+/* ---------- results ---------- */
+const pct = x => (x == null ? "–" : (100 * x).toFixed(0) + "%");
+async function loadRuns() {
+  const runs = await api("/api/runs").catch(() => []), box = $("#runs");
+  if (!runs.length) { box.innerHTML = '<p class="note">No runs yet.</p>'; return; }
+  box.innerHTML = `<table><tr><th>Run</th><th>Summary</th><th>Actions</th></tr>${runs.map(r => {
+    const f = r.final, bits = [];
+    if (f) bits.push(`${r.method}: test ${pct(f.test.verified)} · val ${pct(f.val.verified)} · regression ${pct(f.reg.verified)}` + (r.proposed != null ? ` · accepted ${r.accepted}/${r.proposed}` : ""));
+    if (r.has_summary) bits.push("method comparison (summary.md)");
+    const acts = [];
+    if (r.has_dashboard) acts.push(`<a href="/files/${r.path}/dashboard.html" target="_blank">dashboard</a>`);
+    r.dashboards.forEach(d => acts.push(`<a href="/files/${d}" target="_blank">${d.split("/").slice(-3, -1).join("/")}</a>`));
+    if (r.has_summary) acts.push(`<a href="#" data-view="${r.path}/summary.md">summary</a>`);
+    if (r.has_result) { acts.push(`<a href="#" data-view="${r.path}/result.json">result.json</a>`); acts.push(`<a href="#" data-rebuild="${r.path}">rebuild dashboard</a>`); acts.push(`<a href="#" data-rollback="${r.path}">roll back…</a>`); }
+    return `<tr><td><b>${r.name}</b><br><span class="note">${new Date(r.mtime * 1000).toLocaleString()}</span></td><td>${bits.join("<br>") || "—"}</td><td>${acts.join(" · ")}</td></tr>`;
+  }).join("")}</table>`;
+  $$("[data-view]").forEach(a => a.onclick = async e => { e.preventDefault(); const t = await (await fetch("/files/" + a.dataset.view, {headers: {"X-Token": TOKEN}})).text();
+    $("#viewer").style.display = ""; $("#viewer-title").textContent = a.dataset.view; $("#viewer-body").textContent = t; $("#viewer").scrollIntoView(); });
+  $$("[data-rebuild]").forEach(a => a.onclick = e => { e.preventDefault(); launch("dashboard", {run_dir: a.dataset.rebuild, title: "Rebuild dashboard"}); });
+  $$("[data-rollback]").forEach(a => a.onclick = e => { e.preventDefault(); const g = prompt("Roll back to which generation number (0 = initial scaffold)?"); if (g !== null && g !== "") launch("rollback", {run_dir: a.dataset.rollback, gen: g, title: "Rollback to gen " + g}); });
+}
+$("#reload-runs").onclick = loadRuns;
+$("#viewer-close").onclick = () => { $("#viewer").style.display = "none"; };
+
+/* ---------- job history ---------- */
+async function loadJobs() {
+  const js = await api("/api/jobs").catch(() => []);
+  $("#joblist").innerHTML = js.length ? `<table><tr><th>Job</th><th>Status</th><th>Started</th><th>Duration</th><th></th></tr>${js.map(j =>
+    `<tr><td><b>${j.title}</b><br><code style="font-size:11px">${j.cmd.replace(/^.*?python(\.exe)?"? /i, "python ")}</code></td><td class="st-${j.status}">${j.status}</td><td>${new Date(j.started * 1000).toLocaleTimeString()}</td><td>${fmt((j.ended || Date.now() / 1000) - j.started)}</td><td><a href="#" data-job="${j.id}">view log</a></td></tr>`).join("")}</table>` : '<p class="note">No jobs yet.</p>';
+  $$("[data-job]").forEach(a => a.onclick = e => { e.preventDefault(); watch(a.dataset.job); });
+}
+
+/* ---------- init ---------- */
+(async () => {
+  updateEstimates(); $("#m-backend").dispatchEvent(new Event("change"));
+  await loadStatus();
+  const js = await api("/api/jobs").catch(() => []); if (js.length) watch(js[0].id);
+  try { const t = localStorage.getItem("sicas-tab"); if (t) showTab(t); } catch (e) {}
+})();
+</script>
+</body>
+</html>

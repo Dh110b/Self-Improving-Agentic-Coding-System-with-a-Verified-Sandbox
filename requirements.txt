@@ -1,0 +1,4 @@
+# Core has NO hard dependencies (stdlib only). Optional:
+anthropic>=0.40        # for --llm anthropic:<model>
+evalplus               # for scripts/convert_evalplus.py (HumanEval+/MBPP+)
+pytest>=8              # tests
