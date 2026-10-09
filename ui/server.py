@@ -205,6 +205,8 @@ def build_job(kind: str, p: dict) -> tuple[list[str], dict]:
             raise ValueError("bad methods")
         return py + ["-m", "sicas", "experiment", "--methods", ",".join(methods),
                      "--seeds", str(_int(p, "seeds", 3, 1, 50)), "--out", _run_dir(p, "out")] + common(), env
+    if kind == "serve":
+        return py + ["-m", "sicas", "serve"], env
     if kind == "dashboard":
         return py + ["-m", "sicas", "dashboard", _run_dir(p)], env
     if kind == "rollback":
@@ -231,7 +233,11 @@ def build_job(kind: str, p: dict) -> tuple[list[str], dict]:
 def start_job(kind: str, params: dict) -> dict:
     with _state_lock:
         busy = [j for j in JOBS.values() if j["status"] == "running" and j["exclusive"]]
-        exclusive = kind not in ("dashboard", "rollback", "doctor", "start_docker")
+        exclusive = kind not in ("dashboard", "rollback", "doctor", "start_docker", "serve")
+        if kind == "serve":  # one upload-page server at a time
+            for j in JOBS.values():
+                if j["kind"] == "serve" and j["status"] == "running":
+                    return public(j)
         if busy and exclusive:
             raise ValueError(f"another job is running ({busy[0]['title']}); stop it first")
         argv, extra = build_job(kind, params)

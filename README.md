@@ -56,7 +56,7 @@ The 60-task subset `data/he_subset.jsonl` is included in the repo; the large `da
 
 ## Quick start
 
-**Easiest: the web control panel** - `python ui/server.py` (or double-click `start_ui.bat`), then open http://127.0.0.1:8765.
+**Easiest, no experience needed: the web control panel.** Its *Start here* page explains the project in plain English, checks your computer and runs a one-minute practice demo with one click. Start it with `python ui/server.py` (or double-click `start_ui.bat`), then open http://127.0.0.1:8765.
 It has a *Test run* tab (mock LLM) and a *Main run* tab (real model) with prerequisites and estimated durations. See
 [Control panel](#control-panel-web-ui). The terminal equivalents:
 

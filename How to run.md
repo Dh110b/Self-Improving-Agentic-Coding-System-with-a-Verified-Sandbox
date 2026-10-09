@@ -39,6 +39,7 @@ Leave that window open while you use the page. Close it (Ctrl+C) to shut the pan
 
 | Tab | Use it to |
 |---|---|
+| **Start here** | New to this? Plain-English explanation, a computer check, a one-click practice demo with a readable result, and a button that opens the upload page (Part U). |
 | **Setup & checks** | See what is ready (green) or missing (red/amber) and fix it with one click: *Start Docker Desktop*, *Pull model*, *Convert dataset*, *Make subset*, *Install* (pytest / evalplus / anthropic). Enter an API key here for API runs (memory only). |
 | **Test run** | Offline mock-LLM demo = Part A: 1 check environment, 2 run tests, 3 one evolve run, 4 compare all methods. |
 | **Main run** | Real experiment = Part B: pick the model, then 1 prepare data, 2 small trial, 3 full experiment, 4 ablations. Run buttons stay disabled until the required items are green. |

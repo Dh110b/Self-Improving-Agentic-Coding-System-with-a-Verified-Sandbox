@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SICAS Control Panel</title>
+<title>SICAS - Self-Improving Coding Assistant</title>
 <style>
 :root{--bg:#f6f7f9;--card:#fff;--ink:#1c2128;--mute:#5b6572;--line:#d9dee5;--accent:#2457d6;--accent-ink:#fff;--ok:#1a7f45;--bad:#b42318;--warn:#a15c00;--code:#0f141a;--code-ink:#d6e2f0}
 @media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0f1318;--card:#171c23;--ink:#e6eaf0;--mute:#98a3b3;--line:#2a323d;--accent:#6c97ff;--accent-ink:#0b1020;--ok:#4cc380;--bad:#ff7b6e;--warn:#e6a23c;--code:#0a0d11}}
@@ -54,25 +54,146 @@ a{color:var(--accent)}
 #log{margin:0;background:var(--code);color:var(--code-ink);font:12px/1.45 Consolas,monospace;padding:8px 16px;overflow:auto;flex:1;min-height:90px;white-space:pre-wrap;word-break:break-word}
 .st-running{color:var(--accent)}.st-done{color:var(--ok)}.st-failed,.st-stopped{color:var(--bad)}
 code{background:var(--bg);padding:1px 5px;border-radius:4px}
+
+/* ---- friendly layer ---- */
+:root{--brand:#2457d6;--brand2:#7c3aed;--soft:#eef3ff;--shadow:0 1px 2px rgba(16,24,40,.06),0 4px 14px rgba(16,24,40,.06)}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--soft:#1b2437;--shadow:0 1px 2px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.3)}}
+body{font-size:15px;padding-bottom:70px}
+body.dock-open{padding-bottom:320px}
+header{padding:10px 24px;gap:22px;box-shadow:var(--shadow)}
+.logo{display:flex;align-items:center;gap:10px}
+.logo i{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--brand),var(--brand2));display:grid;place-items:center;color:#fff;font:700 15px/1 system-ui;font-style:normal}
+.logo b{font-size:16px;letter-spacing:.2px}.logo small{display:block;color:var(--mute);font-size:11px;margin-top:-2px}
+nav button{font-weight:500;padding:8px 14px}
+nav button:hover:not(.on){background:var(--soft);color:var(--ink)}
+.card{box-shadow:var(--shadow);border-radius:14px;padding:20px 22px}
+.btn{border-radius:8px}
+.hero{background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;border-radius:18px;padding:34px 34px 30px;margin-bottom:18px;box-shadow:var(--shadow)}
+.hero h2{font-size:28px;line-height:1.2;margin:0 0 10px;color:#fff}
+.hero p{font-size:16px;margin:0 0 6px;max-width:720px;opacity:.96}
+.flow{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px;align-items:stretch}
+.flow div{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);border-radius:12px;padding:10px 12px;flex:1;min-width:140px}
+.flow b{display:block;font-size:13px}.flow span{font-size:12px;opacity:.9}
+.flow em{font-style:normal;display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#fff;color:var(--brand);font-weight:700;font-size:11px;margin-right:6px}
+.big{font-size:16px;font-weight:600;padding:13px 26px;border-radius:10px}
+.stepcard{display:grid;grid-template-columns:44px 1fr;gap:6px 16px}
+.stepcard .bubble{width:44px;height:44px;border-radius:50%;background:var(--soft);color:var(--brand);display:grid;place-items:center;font-weight:700;font-size:18px}
+.stepcard h3{margin:2px 0 4px;font-size:18px}
+.stepcard p{margin:0 0 10px;color:var(--mute)}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap}
+.pill.g{background:rgba(26,127,69,.13);color:var(--ok)}.pill.a{background:rgba(161,92,0,.13);color:var(--warn)}.pill.r{background:rgba(180,35,24,.12);color:var(--bad)}
+.fl{display:grid;gap:10px;margin:12px 0}
+.fl>div{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:12px 14px;border:1px solid var(--line);border-radius:12px}
+.fl .t b{display:block}.fl .t span{color:var(--mute);font-size:13px}
+.banner{background:var(--soft);border-left:4px solid var(--brand);border-radius:8px;padding:10px 14px;margin:12px 0;font-size:14px}
+.banner.warnb{border-color:var(--warn)}
+.scores{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:12px 0}
+.scores div{background:var(--soft);border-radius:12px;padding:14px}
+.scores b{display:block;font-size:26px}.scores span{font-size:13px;color:var(--mute)}
+.bar2{height:12px;background:var(--bg);border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:10px 0 4px}
+.bar2 i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--brand),var(--brand2));transition:width .6s}
+details.gloss{border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:8px 0;background:var(--card)}
+details.gloss summary{cursor:pointer;font-weight:600}
+details.gloss p{margin:8px 0 2px;color:var(--mute)}
+.adv{font-size:11px;background:var(--soft);color:var(--brand);border-radius:99px;padding:1px 8px;margin-left:6px;font-weight:600}
+nav button.on .adv{background:rgba(255,255,255,.25);color:inherit}
+#dock{border-top:1px solid var(--line);box-shadow:0 -4px 16px rgba(16,24,40,.08)}
+#dock.collapsed #log{display:none}
+#dock.idle{display:none}
+.hint{font-size:13px;color:var(--mute)}
+a.btn{display:inline-block;text-decoration:none}
+@media(max-width:640px){.hero{padding:22px 18px}.hero h2{font-size:22px}header{padding:10px 14px}.fl>div{grid-template-columns:auto 1fr}}
 </style>
 </head>
 <body>
 <header>
-  <h1>SICAS Control Panel</h1>
+  <div class="logo"><i>S</i><div><b>SICAS</b><small>Self-Improving Coding Assistant</small></div></div>
   <nav id="nav">
-    <button data-t="setup" class="on">Setup &amp; checks</button>
-    <button data-t="test">Test run</button>
-    <button data-t="main">Main run</button>
-    <button data-t="results">Results</button>
-    <button data-t="jobs">Job history</button>
+    <button data-t="start" class="on">Start here</button>
+    <button data-t="results">My results</button>
+    <button data-t="setup">Check my computer</button>
+    <button data-t="test">Practice demo <span class="adv">more options</span></button>
+    <button data-t="main">Real experiment <span class="adv">advanced</span></button>
+    <button data-t="jobs">Activity log</button>
   </nav>
 </header>
 <main>
 
-<!-- ============================ SETUP ============================ -->
-<section class="tab on" id="t-setup">
+
+<!-- ============================ START HERE ============================ -->
+<section class="tab on" id="t-start">
+  <div class="hero">
+    <h2>Can an AI coding assistant get better at its job &mdash; safely?</h2>
+    <p>This program lets a coding assistant improve itself by rewriting its own instructions. But it is never allowed to just <i>claim</i> it got better: every change is tested in a sealed, locked-down box on problems it has not seen, and it is kept only if it really helps and breaks nothing.</p>
+    <p>You do not need to know anything about AI or programming to try it. It takes about one minute.</p>
+    <div class="flow">
+      <div><b><em>1</em>Try problems</b><span>The assistant attempts small coding exercises.</span></div>
+      <div><b><em>2</em>Learn from mistakes</b><span>It looks at what went wrong.</span></div>
+      <div><b><em>3</em>Suggest a change</b><span>It proposes better instructions for itself.</span></div>
+      <div><b><em>4</em>Test in a sealed box</b><span>The change is checked on fresh problems it has never seen.</span></div>
+      <div><b><em>5</em>Keep or reject</b><span>Only proven improvements are kept; every version is saved.</span></div>
+    </div>
+  </div>
+
+  <div class="card stepcard" id="sc1">
+    <div class="bubble">1</div>
+    <div>
+      <h3>Is your computer ready?</h3>
+      <p>For the practice demo you only need Python, which is already running this page. The other items are optional extras for later.</p>
+      <div class="fl" id="friendly"></div>
+      <span class="hint">Nothing here changes your computer. <a href="#" id="to-setup">See all technical checks</a></span>
+    </div>
+  </div>
+
+  <div class="card stepcard" id="sc2">
+    <div class="bubble">2</div>
+    <div>
+      <h3>Run the practice demo</h3>
+      <p>A pretend AI practises on 28 tiny exercises (things like &ldquo;reverse a word&rdquo;). It proposes changes to itself and the safety checks accept or reject each one. No internet, no cost, no downloads.</p>
+      <div class="row"><button class="btn primary big" id="demo-go">Start the practice demo</button><span class="hint">Takes about 30&ndash;60 seconds.</span></div>
+      <div id="demo-live" style="display:none">
+        <div class="bar2"><i id="demo-bar"></i></div>
+        <div class="hint" id="demo-status">Starting&hellip;</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card stepcard" id="sc3" style="display:none">
+    <div class="bubble">3</div>
+    <div>
+      <h3>What happened</h3>
+      <div id="demo-result"></div>
+    </div>
+  </div>
+
+  <div class="card stepcard" id="sc4">
+    <div class="bubble">4</div>
+    <div>
+      <h3>What next?</h3>
+      <p>Pick whichever suits you:</p>
+      <div class="fl">
+        <div><span></span><div class="t"><b>Try it on your own coding exercises</b><span>Upload a file of exercises with tests and watch the assistant improve on them. Works with the pretend AI for free.</span></div><button class="btn primary" id="open-upload">Open the upload page</button></div>
+        <div><span></span><div class="t"><b>Use a real AI model</b><span>Runs the real experiment with a free local model (Ollama) or Claude. Needs Docker; takes from minutes to hours.</span></div><button class="btn" data-goto="main">Go to Real experiment</button></div>
+        <div><span></span><div class="t"><b>See every past run</b><span>Open the full dashboards and scores of anything you have run.</span></div><button class="btn" data-goto="results">My results</button></div>
+      </div>
+    </div>
+  </div>
+
   <div class="card">
-    <h2>Environment checks</h2>
+    <h3 style="margin:0 0 6px">Words you will see</h3>
+    <details class="gloss"><summary>Scaffold</summary><p>The assistant&rsquo;s &ldquo;instruction booklet&rdquo;: its rules, tools and notes. This is what gets improved. The AI model itself is never changed.</p></details>
+    <details class="gloss"><summary>Sandbox</summary><p>A sealed, disposable box where the assistant&rsquo;s code runs. It has no internet and cannot touch your files, so nothing it does can cause harm.</p></details>
+    <details class="gloss"><summary>Gate</summary><p>The checkpoint every proposed change must pass: it must score better on unseen problems, must not break anything that used to work, and must not cheat (for example by editing the tests).</p></details>
+    <details class="gloss"><summary>Generation</summary><p>One round of &ldquo;try, learn, propose, test, keep or reject&rdquo;. More generations give the assistant more chances to improve.</p></details>
+    <details class="gloss"><summary>Mock (pretend) AI</summary><p>A simple stand-in used for practice. It shows how the system works but its scores are <b>not</b> real research results.</p></details>
+    <details class="gloss"><summary>Docker, Ollama</summary><p>Docker provides the sealed box. Ollama runs a free AI model on your own computer. Both are only needed for the real experiment.</p></details>
+  </div>
+</section>
+
+<!-- ============================ SETUP ============================ -->
+<section class="tab" id="t-setup">
+  <div class="card">
+    <h2>Technical checks</h2>
     <p class="sub">Everything the project needs on this machine. A red dot means a run that depends on it will fail; amber means optional. Use the buttons to fix items in one click.</p>
     <div class="row" style="margin-bottom:8px"><button class="btn" id="refresh">Re-check now</button><span class="note" id="rootnote"></span></div>
     <ul class="chk" id="allchecks"></ul>
@@ -95,7 +216,7 @@ code{background:var(--bg);padding:1px 5px;border-radius:4px}
 <!-- ============================ TEST RUN ============================ -->
 <section class="tab" id="t-test">
   <div class="card">
-    <h2>Test run — offline demo with the mock LLM</h2>
+    <h2>Practice demo &mdash; more options</h2>
     <p class="sub">Proves the pipeline works end to end (sandbox, gate, archive, dashboard). No model, no internet, no cost. <b class="warn">These numbers are not research results.</b></p>
     <b>Must be ready first</b>
     <ul class="chk" id="pre-test"></ul>
@@ -159,7 +280,7 @@ code{background:var(--bg);padding:1px 5px;border-radius:4px}
 <!-- ============================ MAIN RUN ============================ -->
 <section class="tab" id="t-main">
   <div class="card">
-    <h2>Main run — real model, real tasks</h2>
+    <h2>Real experiment &mdash; advanced</h2>
     <p class="sub">The experiment whose numbers go in the paper: HumanEval+ subset (60 tasks: 20 train / 15 val / 15 test / 10 regression), code executed in the Docker sandbox.</p>
     <div class="grid">
       <label>Model backend
@@ -244,7 +365,7 @@ code{background:var(--bg);padding:1px 5px;border-radius:4px}
 <!-- ============================ RESULTS ============================ -->
 <section class="tab" id="t-results">
   <div class="card">
-    <h2>Finished runs</h2>
+    <h2>My results</h2>
     <p class="sub">Everything under <code>runs/</code>. Dashboards open in a new tab.</p>
     <div class="row" style="margin-bottom:8px"><button class="btn" id="reload-runs">Reload</button></div>
     <div id="runs"></div>
@@ -257,17 +378,17 @@ code{background:var(--bg);padding:1px 5px;border-radius:4px}
 
 <!-- ============================ JOBS ============================ -->
 <section class="tab" id="t-jobs">
-  <div class="card"><h2>Job history</h2><p class="sub">Since this panel started. Logs are also saved to <code>runs/_ui_logs/</code>.</p><div id="joblist"></div></div>
+  <div class="card"><h2>Activity log</h2><p class="sub">Since this panel started. Logs are also saved to <code>runs/_ui_logs/</code>.</p><div id="joblist"></div></div>
 </section>
 </main>
 
-<div id="dock">
+<div id="dock" class="idle collapsed">
   <div class="bar">
     <b id="d-title">No job running</b>
     <span id="d-status" class="note"></span>
     <div id="prog"><i></i></div>
     <span id="d-time" class="note"></span>
-    <button class="btn danger" id="d-stop" disabled>Stop</button>
+    <button class="btn" id="d-toggle">Show details</button><button class="btn danger" id="d-stop" disabled>Stop</button>
   </div>
   <pre id="log">Output of the current job appears here.</pre>
 </div>
@@ -284,6 +405,7 @@ async function api(path, body) {
 
 /* ---------- tabs ---------- */
 function showTab(t) {
+  if (!document.getElementById("t-" + t)) t = "start";
   $$("#nav button").forEach(b => b.classList.toggle("on", b.dataset.t === t));
   $$("section.tab").forEach(s => s.classList.toggle("on", s.id === "t-" + t));
   try { localStorage.setItem("sicas-tab", t); } catch (e) {}
@@ -292,6 +414,8 @@ function showTab(t) {
   loadStatus();
 }
 $$("#nav button").forEach(b => b.onclick = () => showTab(b.dataset.t));
+$$("[data-goto]").forEach(b => b.onclick = () => showTab(b.dataset.goto));
+$("#to-setup").onclick = e => { e.preventDefault(); showTab("setup"); };
 
 /* ---------- estimates ---------- */
 const SPLITS = {toy: {T: 8, V: 8, S: 8, R: 4}, he: {T: 20, V: 15, S: 15, R: 10}};
@@ -368,7 +492,21 @@ const is7b = () => $("#m-backend").value.includes("7b");
 const mainRequired = () => isApi() ? ["docker", "subset", "anthropic", "apikey"] : ["docker", "ollama", "subset"].concat(is7b() ? [] : ["model"]);
 function mainReady() { return mainRequired().every(id => CHECKS[id] && CHECKS[id].ok) && (isApi() || !is7b() || modelListed("qwen2.5-coder:7b")); }
 function modelListed(want) { return !!CHECKS.model && CHECKS.model.detail.split(", ").includes(want); }
+const FRIENDLY = [
+  ["python", "Python", "The engine that runs this program. Already working, since you are seeing this page.", "needed for the demo", true],
+  ["docker", "Docker", "Provides the sealed safety box for real AI models. Not needed for the practice demo.", "needed for the real experiment", false],
+  ["ollama", "Ollama", "Runs a free AI model on your own computer. Not needed for the practice demo.", "needed for the free real model", false],
+];
+function renderFriendly() {
+  const box = $("#friendly"); if (!box) return;
+  box.innerHTML = FRIENDLY.map(([id, name, why, when, need]) => {
+    const c = CHECKS[id], ok = c && c.ok;
+    const pill = ok ? '<span class="pill g">Ready</span>' : (need ? '<span class="pill r">Missing</span>' : '<span class="pill a">Not set up (optional)</span>');
+    return `<div><span class="dot ${ok ? "ok" : (need ? "bad" : "opt")}"></span><div class="t"><b>${name} <span class="hint">&middot; ${when}</span></b><span>${why}</span></div>${pill}</div>`;
+  }).join("");
+}
 function renderAll() {
+  renderFriendly();
   renderChecks($("#allchecks"), Object.keys(CHECKS), ["python", "docker", "ollama", "model", "subset", "pytest"]);
   renderChecks($("#pre-test"), ["python", "docker", "pytest", "image", "disk"], ["python"]);
   renderChecks($("#pre-main"), ["python", "docker", "image", "ollama", "model", "dataset", "subset", "anthropic", "apikey", "disk", "cpu"], mainRequired());
@@ -440,15 +578,73 @@ async function tick() {
     if (atEnd) log.scrollTop = log.scrollHeight;
   }
   const running = j.status === "running", el = ((j.ended || Date.now() / 1000) - j.started);
+  $("#dock").classList.remove("idle"); dockState();
+  if (j.id === demoJob) demoProgress(j);
   $("#d-title").textContent = j.title;
   $("#d-status").innerHTML = `<span class="st-${j.status}">${j.status}${j.code !== null && j.code !== undefined ? " (exit " + j.code + ")" : ""}</span>`;
   const est = j.est_seconds;
   $("#d-time").textContent = `elapsed ${fmt(el)}` + (est ? ` · est. total ${fmt(est)}` : "");
   $("#prog i").style.width = (running ? (est ? Math.min(95, 100 * el / est) : 50) : (j.status === "done" ? 100 : 0)) + "%";
   $("#d-stop").disabled = !running;
-  if (!running) { clearInterval(timer); timer = null; loadStatus(); loadRuns(); }
+  if (!running) { clearInterval(timer); timer = null; loadStatus(); loadRuns(); if (j.id === demoJob) { demoFinished(j); demoJob = null; } }
 }
 $("#d-stop").onclick = () => cur && api(`/api/jobs/${cur}/stop`, {});
+function dockState() {
+  const d = $("#dock");
+  document.body.classList.toggle("dock-open", !d.classList.contains("idle") && !d.classList.contains("collapsed"));
+}
+$("#d-toggle").onclick = () => {
+  const d = $("#dock"); d.classList.toggle("collapsed");
+  $("#d-toggle").textContent = d.classList.contains("collapsed") ? "Show details" : "Hide details";
+  dockState();
+};
+
+/* ---------- practice demo (Start here) ---------- */
+const DEMO_OUT = "runs/demo_quick";
+let demoJob = null;
+$("#demo-go").onclick = async () => {
+  $("#demo-go").disabled = true; $("#sc3").style.display = "none";
+  $("#demo-live").style.display = ""; $("#demo-bar").style.width = "3%"; $("#demo-status").textContent = "Starting the demo...";
+  try {
+    const j = await api("/api/jobs", {kind: "evolve", params: {llm: "mock", tasks: "toy", method: "gated", generations: 2, candidates: 2, seed: 0, out: DEMO_OUT, title: "Practice demo", est_seconds: 45}});
+    demoJob = j.id; watch(j.id);
+  } catch (e) { $("#demo-status").textContent = "Could not start: " + e.message; $("#demo-go").disabled = false; }
+};
+function demoProgress(j) {
+  const el = (j.ended || Date.now() / 1000) - j.started;
+  if (j.status === "running") {
+    $("#demo-bar").style.width = Math.min(92, 4 + 88 * el / 45) + "%";
+    const steps = ["Setting up the sealed test box", "The assistant is trying the practice problems", "It is studying its mistakes", "It is proposing changes to its own instructions", "The safety gate is testing each change", "Almost there"];
+    $("#demo-status").textContent = steps[Math.min(steps.length - 1, Math.floor(el / 8))] + "...  (" + Math.round(el) + " s)";
+  }
+}
+const solved = x => Math.round(x.verified * x.n);
+async function demoFinished(j) {
+  $("#demo-go").disabled = false; $("#demo-go").textContent = "Run it again";
+  if (j.status !== "done") { $("#demo-bar").style.width = "0"; $("#demo-status").textContent = j.status === "stopped" ? "Stopped." : 'Something went wrong. Click "Show details" at the bottom of the page to see why.'; return; }
+  $("#demo-bar").style.width = "100%"; $("#demo-status").textContent = "Finished.";
+  let r; try { r = await (await fetch("/files/" + DEMO_OUT + "/result.json")).json(); } catch (e) { return; }
+  const ev = r.evolution, t = r.final.test, v = r.final.val, g = r.final.reg, rej = ev.proposed - ev.accepted;
+  $("#demo-result").innerHTML = `
+    <div class="banner warnb"><b>Practice only.</b> The AI here is a pretend stand-in, so these numbers show how the screen works &mdash; they are not real research results.</div>
+    <p style="color:var(--ink)">The assistant suggested <b>${ev.proposed}</b> changes to its own instructions. The safety gate <b>kept ${ev.accepted}</b>${rej > 0 ? " and <b>rejected " + rej + "</b>" : ""}. Every version is saved, so any change can be undone.</p>
+    <div class="scores">
+      <div><b>${solved(t)} of ${t.n}</b><span>brand-new problems solved (the final exam, seen only once)</span></div>
+      <div><b>${solved(v)} of ${v.n}</b><span>checking problems solved (used by the gate to decide)</span></div>
+      <div><b>${solved(g)} of ${g.n}</b><span>old problems still solved (nothing got worse)</span></div>
+    </div>
+    <p class="hint">${ev.flagged_runs ? ev.flagged_runs + " attempt(s) were flagged for suspicious behaviour such as editing tests, and counted as failures." : "No cheating attempts (such as editing the tests) were detected."}</p>
+    <div class="row"><a class="btn primary" target="_blank" href="/files/${DEMO_OUT}/dashboard.html">Open the full visual report</a><button class="btn" id="see-all">See all my results</button></div>`;
+  $("#see-all").onclick = () => showTab("results");
+  $("#sc3").style.display = ""; $("#sc3").scrollIntoView({behavior: "smooth", block: "start"});
+}
+
+/* ---------- upload page launcher ---------- */
+$("#open-upload").onclick = async () => {
+  const b = $("#open-upload"); b.disabled = true; b.textContent = "Starting...";
+  try { await api("/api/jobs", {kind: "serve", params: {title: "Upload page"}}); } catch (e) { /* may already be running */ }
+  setTimeout(() => { window.open("http://127.0.0.1:8766/", "_blank"); b.disabled = false; b.textContent = "Open the upload page"; }, 1500);
+};
 
 /* ---------- results ---------- */
 const pct = x => (x == null ? "–" : (100 * x).toFixed(0) + "%");
@@ -486,8 +682,7 @@ async function loadJobs() {
 (async () => {
   updateEstimates(); $("#m-backend").dispatchEvent(new Event("change"));
   await loadStatus();
-  const js = await api("/api/jobs").catch(() => []); if (js.length) watch(js[0].id);
-  try { const t = localStorage.getItem("sicas-tab"); if (t) showTab(t); } catch (e) {}
+  try { const t = localStorage.getItem("sicas-tab"); if (t && t !== "start") showTab(t); } catch (e) {}
 })();
 </script>
 </body>
