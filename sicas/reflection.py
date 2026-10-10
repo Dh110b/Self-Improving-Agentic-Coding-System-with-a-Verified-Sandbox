@@ -4,11 +4,14 @@ The reflector never sees val/test/regression tasks or any hidden-test source.
 """
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 
 from .llm import LLM, CostMeter
 from .scaffold import (COMPONENTS, TOOLS, DiffError, Scaffold, apply_diff, diff_components,
                        parse_json_object)
+
+log =logging.getLogger(__name__)
 
 SYSTEM = """You improve the scaffold of a coding agent (never its model weights).
 You get the current scaffold and failed attempts. Propose ONE small, GENERAL change that would
@@ -51,12 +54,16 @@ class Reflector:
             self.meter.add(resp)
             diff = parse_json_object(resp.text)
             if not diff:
+                log.warning("reflector: candidate %d dropped, reply not parseable as JSON: %r",
+                            i, resp.text[:300])
                 continue
             try:
                 new = apply_diff(sc, diff, self.allowed)
-            except DiffError:
+            except DiffError as e:
+                log.warning("reflector: candidate %d dropped, invalid diff (%s): %r", i, e, diff)
                 continue
             if new.digest in seen:
+                log.warning("reflector: candidate %d dropped, duplicate scaffold: %r", i, diff)
                 continue
             seen.add(new.digest)
             diff["components"] = sorted(diff_components(diff))
