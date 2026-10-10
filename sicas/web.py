@@ -284,6 +284,7 @@ code{background:var(--bg);padding:1px 6px;border-radius:5px}
   <p class="sub">The defaults are fine. Hover over a field name for details.</p>
   <div class="grid">
     <div><label>AI to use</label><select id="llm"><option value="mock">Pretend AI (free practice run)</option>
+      <option value="gemini:gemini-3.8-flash">Gemini 3.8 Flash (real, free tier, needs Docker)</option>
       <option value="anthropic:claude-haiku-4-5-20251001">Claude Haiku 4.5 (real, paid, needs Docker)</option>
       <option value="anthropic:claude-sonnet-5-5">Claude Sonnet 5.5 (real, paid, needs Docker)</option></select>
       <div class="help">&ldquo;Pretend&rdquo; shows how everything works; its scores are not real results.</div></div>

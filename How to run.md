@@ -20,6 +20,7 @@ Docker/Ollama helpers target Windows.
 | Python packages | tests, dataset, Claude | `python -m pip install -r requirements.txt` (all optional; the core is stdlib-only) |
 | Docker Desktop | real-LLM runs, sandbox tests | https://www.docker.com/products/docker-desktop/ - start it; image `python:3.11-slim` is pulled on first use (or `docker pull python:3.11-slim`) |
 | Ollama + model | free local real runs | https://ollama.com/download, then `ollama pull qwen2.5-coder:1.5b` (~1 GB) |
+| Gemini API key | optional, free tier | put `GEMINI_API_KEY=...` in `.env` (copy `.env.example`; `.env` is git-ignored) |
 | Anthropic API key | optional, Claude runs (billed) | `$env:ANTHROPIC_API_KEY = "your-key"` |
 
 **Minimum to try the project: Python only.** Part A (offline mock demo) and Parts 0/U with the `mock` LLM need nothing else.
@@ -209,6 +210,15 @@ Same command as B5 with one extra flag and a new `--out` folder:
 | Is tamper enforcement needed? | `--methods gated --no-tamper` |
 | Which component transfers? | `--methods gated --components prompt` (then `tools`, `skills`, `retrieval`, `memory`) |
 
+### Using Gemini instead (optional, free tier)
+```powershell
+# GEMINI_API_KEY is read from .env; use a model id that is currently available in AI Studio
+$env:SICAS_TEMPERATURE = "0.3"
+python -m sicas experiment --llm gemini:gemini-3.8-flash --tasks data/he_subset.jsonl `
+       --seeds 3 --generations 5 --candidates 3 --out runs/he_gemini
+```
+The free tier is rate-limited: 429/5xx replies are retried with backoff, and a persistent failure stops the run (it never scores an empty reply as a wrong answer). `seed` is not sent to Gemini unless `SICAS_SEND_SEED=1`. Cost columns use the default per-token prices, so read them as relative token cost, not dollars. State the exact model and run date in the paper.
+
 ### Using the Anthropic API instead (optional)
 ```powershell
 $env:ANTHROPIC_API_KEY = "your-key"
@@ -234,6 +244,8 @@ python -m sicas experiment --llm anthropic:claude-haiku-4-5-20251001 --tasks dat
 | Upload page: "a real LLM needs Docker isolation" | Start Docker Desktop, restart `serve`, or pick the `mock` LLM. |
 | `pytest` at the project root errors on `runs/.../test_visible.py` | Run `python -m pytest tests -q`, not bare `pytest`. |
 | A Main-run button is greyed out | A required item on the Main run tab is red. Fix it with the button next to it, then it unlocks. |
+| `LLM quota exhausted` (HTTP 429) on a Gemini run | The free-tier quota is used up for now. Wait for it to reset, use another key, or switch to Ollama. The run stops instead of scoring empty replies. |
+| Gated run accepts nothing and shows `proposed: 0` | The reflector dropped every candidate. Look for `reflector: candidate N dropped, ...` lines in the job log: unparseable JSON, invalid diff, or duplicate scaffold. |
 | Log shows nothing for a long time | Normal. Use `python -u` so output is unbuffered. |
 | Everything is slow | CPU-only. Reduce `--seeds`, `--generations`, `--candidates`, or use fewer tasks. |
 | `SyntaxWarning: invalid escape sequence` when pasting regex via a shell | Edit files with an editor, not shell heredocs (PowerShell has no heredoc). |

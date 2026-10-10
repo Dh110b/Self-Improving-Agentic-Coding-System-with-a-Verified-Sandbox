@@ -21,6 +21,7 @@ Step-by-step instructions (terminal and web UI): **[How to run.md](How%20to%20ru
 | `pytest` | running the tests | recommended |
 | Docker Desktop (Windows/macOS) or Docker Engine (Linux) | the isolated sandbox; mandatory for any real LLM | for real runs |
 | [Ollama](https://ollama.com) + `qwen2.5-coder:1.5b` | free local model | for the local real run |
+| `GEMINI_API_KEY` (free key from aistudio.google.com/apikey) | Gemini models via the OpenAI-compatible endpoint; no extra package | optional |
 | `anthropic` SDK + `ANTHROPIC_API_KEY` | Claude models (billed) | optional |
 | `evalplus` | rebuilding the HumanEval+ dataset | optional |
 
@@ -52,6 +53,7 @@ The 60-task subset `data/he_subset.jsonl` is included in the repo; the large `da
 | Upload & improve page | `python -m sicas serve` - upload your own tasks JSONL, start a run, watch generations live |
 | Real model | Ollama + `qwen2.5-coder:1.5b` (local, via Ollama), smoke-tested on toy and HumanEval+ tasks |
 | HumanEval+ subset (60 tasks, validated) | `data/he_subset.jsonl` (20 train / 15 val / 15 test / 10 regression) |
+| Pilot real-model run | `runs/he_real` (4 methods x 3 seeds, 15 test tasks per seed): fixed, reflexion and gated all 0.511 verified pass@1, ungated 0.467; CIs overlap, so no method is separable yet. Gated accepted 0 changes: the reflector returned no candidate in 14 of 15 generations (cause under investigation, see Troubleshooting) |
 | Final real-model results | in progress; paper tables stay marked pending until filled with real numbers |
 
 ## Quick start
@@ -127,7 +129,7 @@ The CLI refuses to run a real LLM's code without Docker unless `--allow-unsafe-l
 | `sicas/gate.py` | verification gate (G1 val, G2 regression, G3 tamper) |
 | `sicas/archive.py`, `dashboard.py` | versioned archive, lineage, rollback, HTML dashboard |
 | `sicas/evolve.py`, `experiment.py`, `stats.py` | the loop; methods x seeds; mean +/- std, bootstrap CIs |
-| `sicas/llm.py` | Anthropic / Ollama(OpenAI-compatible) / mock clients + cost meter |
+| `sicas/llm.py` | Anthropic / Gemini / Ollama (OpenAI-compatible) / mock clients + cost meter |
 | `sicas/mock.py`, `toy_tasks.py` | offline simulation + 28-task toy benchmark |
 | `scripts/convert_evalplus.py`, `scripts/make_subset.py` | HumanEval+/MBPP+ -> JSONL; validated split subset |
 | `sicas/web.py` | upload page + background job runner behind `python -m sicas serve` (stdlib only) |
@@ -157,7 +159,7 @@ Standard library only; listens on `127.0.0.1` with a per-session token; commands
 |---|---|
 | Setup & checks | live status of Python, Docker, Ollama, model, dataset, subset, pytest, evalplus, anthropic SDK, API key, disk, CPU; one-click fixes (start Docker, pull model, build data, pip install) |
 | Test run | offline mock-LLM demo: environment check, tests, one evolve run, all-method comparison |
-| Main run | real model (Ollama 1.5B/7B or Claude Haiku): prepare data, small trial, full experiment, ablations; buttons unlock when required items are ready |
+| Main run | real model (Ollama 1.5B/7B, Gemini, or Claude Haiku): prepare data, small trial, full experiment, ablations; buttons unlock when required items are ready |
 | Results | all folders in `runs/`: dashboards, `summary.md`, `result.json`, rebuild dashboard, roll back to a generation |
 | Job history | past jobs and logs (also saved to `runs/_ui_logs/`) |
 
@@ -169,7 +171,7 @@ Only one job runs at a time. Mock-LLM numbers are never results.
 
 - LLM-generated code runs only inside the Docker sandbox (no network, read-only, non-root); the CLI refuses a real LLM without Docker.
 - Both web servers bind to `127.0.0.1` and reject non-localhost `Host`/`Origin` headers. They have no login: do not expose them.
-- API keys are read from the environment or typed into the control panel (kept in memory only). Never commit keys; `.env` and `runs/` are git-ignored.
+- API keys are read from the environment, from a git-ignored `.env` (copy `.env.example`), or typed into the control panel (kept in memory only). Never commit keys; `.env` and `runs/` are git-ignored.
 
 ## Troubleshooting
 

@@ -22,6 +22,11 @@ ROOT = Path(__file__).resolve().parent.parent
 UI = Path(__file__).resolve().parent
 RUNS = ROOT / "runs"
 LOGS = RUNS / "_ui_logs"
+
+sys.path.insert(0, str(ROOT))
+from sicas.llm import load_env  # noqa: E402
+
+load_env(str(ROOT / ".env"))  # git-ignored local secrets (ANTHROPIC_API_KEY, ANTHROPIC_WORKSPACE_ID, GEMINI_API_KEY)
 TOKEN = secrets.token_urlsafe(24)
 PORT = int(os.environ.get("SICAS_UI_PORT", "8765"))
 
@@ -115,6 +120,9 @@ def status() -> dict:
     add("pytest", "pytest installed", module_present("pytest"), "", "pip_pytest")
     add("evalplus", "evalplus installed (only to build the dataset)", module_present("evalplus"), "", "pip_evalplus")
     add("anthropic", "anthropic SDK (only for API runs)", module_present("anthropic"), "", "pip_anthropic")
+    add("geminikey", "GEMINI_API_KEY (only for Gemini runs)",
+        bool(_secrets.get("GEMINI_API_KEY") or os.environ.get("GEMINI_API_KEY")),
+        "set" if (_secrets.get("GEMINI_API_KEY") or os.environ.get("GEMINI_API_KEY")) else "not set")
     add("apikey", "ANTHROPIC_API_KEY (only for API runs)",
         bool(_secrets.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_API_KEY")),
         "set" if (_secrets.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_API_KEY")) else "not set")
@@ -183,6 +191,11 @@ def build_job(kind: str, p: dict) -> tuple[list[str], dict]:
         if not key:
             raise ValueError("ANTHROPIC_API_KEY is not set (enter it in the Setup tab)")
         env["ANTHROPIC_API_KEY"] = key
+    if llm.startswith("gemini"):
+        key = _secrets.get("GEMINI_API_KEY") or os.environ.get("GEMINI_API_KEY")
+        if not key:
+            raise ValueError("GEMINI_API_KEY is not set (put it in .env or enter it in the Setup tab)")
+        env["GEMINI_API_KEY"] = key
     if p.get("temperature") not in (None, ""):
         env["SICAS_TEMPERATURE"] = str(float(p["temperature"]))
 
@@ -399,11 +412,13 @@ class Handler(BaseHTTPRequestHandler):
                 stop_job(m.group(1))
                 return self._send(200, {"ok": True})
             if path == "/api/secret":
-                key = str(body.get("ANTHROPIC_API_KEY", "")).strip()
-                if key:
-                    _secrets["ANTHROPIC_API_KEY"] = key
-                else:
-                    _secrets.pop("ANTHROPIC_API_KEY", None)
+                for name in ("ANTHROPIC_API_KEY", "GEMINI_API_KEY"):
+                    if name in body:
+                        key = str(body.get(name, "")).strip()
+                        if key:
+                            _secrets[name] = key
+                        else:
+                            _secrets.pop(name, None)
                 return self._send(200, {"ok": True})
         except ValueError as e:
             return self._send(400, {"error": str(e)})

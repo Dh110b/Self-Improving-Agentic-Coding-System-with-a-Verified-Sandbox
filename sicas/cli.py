@@ -18,7 +18,7 @@ from .tasks import load_jsonl, load_toy
 
 
 def _common(p):
-    p.add_argument("--llm", default="mock", help="mock | anthropic:<model> | ollama:<model>")
+    p.add_argument("--llm", default="mock", help="mock | anthropic:<model> | gemini:<model> | ollama:<model>")
     p.add_argument("--tasks", default="toy", help="'toy' or path to JSONL")
     p.add_argument("--sandbox", default="auto", choices=["auto", "docker", "local"])
     p.add_argument("--gvisor", action="store_true", help="use runsc runtime with Docker")

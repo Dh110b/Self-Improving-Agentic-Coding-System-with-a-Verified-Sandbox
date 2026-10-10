@@ -75,6 +75,7 @@ column for LiveCodeBench (report the model's cutoff).
 | E6 | extension | 50-100 SWE-bench Lite/Verified tasks (needs per-repo Docker images; not included) |
 
 ## 8. Known limitations / honest notes
+* `Reflector.propose` drops a candidate when the reply is not valid JSON, `apply_diff` rejects it, or it duplicates an existing scaffold. Each drop is logged as a warning (`reflector: candidate N dropped, ...`). In the pilot `runs/he_real` this left most gated generations with zero candidates; read these logs before drawing conclusions about the gate.
 * Mock-LLM numbers demonstrate the machinery only. Do not report them as results.
 * HumanEval+ conversion (`scripts/convert_evalplus.py`, needs `evalplus`) was run to build `data/he_subset.jsonl`; the MBPP+ path is best-effort and not exercised.
 * The Docker backend is unit-tested (no network, read-only mount) and was verified on Docker 29.x; run `python -m pytest tests/test_sandbox.py` on your machine (needs Docker running, otherwise that test is skipped).

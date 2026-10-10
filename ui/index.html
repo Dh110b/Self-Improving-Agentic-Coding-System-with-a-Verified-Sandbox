@@ -199,6 +199,11 @@ a.btn{display:inline-block;text-decoration:none}
     <ul class="chk" id="allchecks"></ul>
   </div>
   <div class="card">
+    <h2>Gemini API key <span class="tag">optional</span></h2>
+    <p class="sub">Only needed to run with <code>gemini:&lt;model&gt;</code> (free tier at aistudio.google.com/apikey). Better: put <code>GEMINI_API_KEY=...</code> in the git-ignored <code>.env</code>. A key entered here is held in memory only.</p>
+    <div class="row"><input id="geminikey" type="password" placeholder="AIza... / AQ...." style="width:320px" autocomplete="off"><button class="btn" id="savegkey">Use for this session</button><button class="btn" id="cleargkey">Clear</button></div>
+  </div>
+  <div class="card">
     <h2>Anthropic API key <span class="tag">optional</span></h2>
     <p class="sub">Only needed to run with <code>anthropic:&lt;model&gt;</code> instead of the local Ollama model. Held in memory by this panel only (never written to disk) and cleared when you close it.</p>
     <div class="row"><input id="apikey" type="password" placeholder="sk-ant-..." style="width:320px" autocomplete="off"><button class="btn" id="savekey">Use for this session</button><button class="btn" id="clearkey">Clear</button></div>
@@ -287,6 +292,7 @@ a.btn{display:inline-block;text-decoration:none}
         <select id="m-backend">
           <option value="ollama:qwen2.5-coder:1.5b">Local · Ollama qwen2.5-coder:1.5b (free)</option>
           <option value="ollama:qwen2.5-coder:7b">Local · Ollama qwen2.5-coder:7b (slow on CPU)</option>
+          <option value="gemini:gemini-3.8-flash">API · Gemini 3.8 Flash (free tier, rate-limited)</option>
           <option value="anthropic:claude-haiku-4-5-20251001">API · Claude Haiku 4.5 (paid)</option>
         </select></label>
       <label>Temperature<input id="m-temp" type="number" step="0.1" min="0" max="2" value="0.3"></label>
@@ -471,7 +477,7 @@ $$("input,select").forEach(i => i.addEventListener("input", updateEstimates));
 
 /* ---------- checks ---------- */
 let CHECKS = {};
-const OPTIONAL = new Set(["evalplus", "anthropic", "apikey", "cpu", "image"]);
+const OPTIONAL = new Set(["evalplus", "anthropic", "apikey", "geminikey", "cpu", "image"]);
 const FIX_LABEL = {start_docker: "Start Docker Desktop", pull_model: "Pull model", convert_dataset: "Convert dataset", make_subset: "Make subset", pip_pytest: "Install", pip_evalplus: "Install", pip_anthropic: "Install"};
 function renderChecks(ul, ids, required) {
   ul.innerHTML = "";
@@ -487,9 +493,10 @@ function renderChecks(ul, ids, required) {
     ul.appendChild(li);
   }
 }
-const isApi = () => $("#m-backend").value.startsWith("anthropic");
+const isGemini = () => $("#m-backend").value.startsWith("gemini");
+const isApi = () => $("#m-backend").value.startsWith("anthropic") || isGemini();
 const is7b = () => $("#m-backend").value.includes("7b");
-const mainRequired = () => isApi() ? ["docker", "subset", "anthropic", "apikey"] : ["docker", "ollama", "subset"].concat(is7b() ? [] : ["model"]);
+const mainRequired = () => isGemini() ? ["docker", "subset", "geminikey"] : isApi() ? ["docker", "subset", "anthropic", "apikey"] : ["docker", "ollama", "subset"].concat(is7b() ? [] : ["model"]);
 function mainReady() { return mainRequired().every(id => CHECKS[id] && CHECKS[id].ok) && (isApi() || !is7b() || modelListed("qwen2.5-coder:7b")); }
 function modelListed(want) { return !!CHECKS.model && CHECKS.model.detail.split(", ").includes(want); }
 const FRIENDLY = [
@@ -509,7 +516,7 @@ function renderAll() {
   renderFriendly();
   renderChecks($("#allchecks"), Object.keys(CHECKS), ["python", "docker", "ollama", "model", "subset", "pytest"]);
   renderChecks($("#pre-test"), ["python", "docker", "pytest", "image", "disk"], ["python"]);
-  renderChecks($("#pre-main"), ["python", "docker", "image", "ollama", "model", "dataset", "subset", "anthropic", "apikey", "disk", "cpu"], mainRequired());
+  renderChecks($("#pre-main"), ["python", "docker", "image", "ollama", "model", "dataset", "subset", "anthropic", "apikey", "geminikey", "disk", "cpu"], mainRequired());
   const ok = mainReady();
   $$("[data-needs=main]").forEach(b => { b.disabled = !ok; b.title = ok ? "" : "Some required items above are not ready"; });
 }
@@ -520,11 +527,13 @@ $("#refresh").onclick = loadStatus;
 $("#m-backend").addEventListener("change", () => {
   const api_ = isApi(), big = $("#m-backend").value.includes("7b");
   $("#m-sec").value = api_ ? 5 : big ? 45 : 10;
-  $("#m-secnote").textContent = api_ ? "API runs are network-bound, ~3–8 s per agent run, and billed per token — set a budget in step 3."
+  $("#m-secnote").textContent = api_ ? "API runs are network-bound, ~3–8 s per agent run" + (isGemini() ? "; the Gemini free tier is rate-limited, so calls may pause and retry." : ", and billed per token — set a budget in step 3.")
     : big ? "The 7B model on CPU-only hardware is several times slower than the 1.5B model and needs more RAM; 45 s is a rough guess." : "Default 10 s per run is the figure from the project guide for the 1.5B model on CPU.";
   renderAll(); updateEstimates();
 });
 $("#savekey").onclick = async () => { await api("/api/secret", {ANTHROPIC_API_KEY: $("#apikey").value}); $("#apikey").value = ""; loadStatus(); };
+$("#savegkey").onclick = async () => { await api("/api/secret", {GEMINI_API_KEY: $("#geminikey").value}); $("#geminikey").value = ""; loadStatus(); };
+$("#cleargkey").onclick = async () => { await api("/api/secret", {GEMINI_API_KEY: ""}); loadStatus(); };
 $("#clearkey").onclick = async () => { await api("/api/secret", {ANTHROPIC_API_KEY: ""}); loadStatus(); };
 $("#t4-smoke").onclick = () => { $("#t4-seeds").value = 1; $("#t4-gen").value = 4; updateEstimates(); };
 
