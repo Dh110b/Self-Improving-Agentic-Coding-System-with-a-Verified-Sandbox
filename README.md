@@ -21,7 +21,7 @@ Step-by-step instructions (terminal and web UI): **[How to run.md](How%20to%20ru
 | `pytest` | running the tests | recommended |
 | Docker Desktop (Windows/macOS) or Docker Engine (Linux) | the isolated sandbox; mandatory for any real LLM | for real runs |
 | [Ollama](https://ollama.com) + `qwen2.5-coder:1.5b` | free local model | for the local real run |
-| `GEMINI_API_KEY` (free key from aistudio.google.com/apikey) | Gemini models via the OpenAI-compatible endpoint; no extra package | optional |
+| `GEMINI_API_KEY` (free key from aistudio.google.com/apikey) | Gemini models via the OpenAI-compatible endpoint; no extra package. The free tier is very small (about 20 requests/day per model), so use Ollama for full runs | optional |
 | `anthropic` SDK + `ANTHROPIC_API_KEY` | Claude models (billed) | optional |
 | `evalplus` | rebuilding the HumanEval+ dataset | optional |
 

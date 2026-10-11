@@ -114,6 +114,16 @@ docker --version
 ollama --version
 ```
 
+**Docker data on another drive (Windows, WSL2).** Docker's images and containers live in one disk file, `%LOCALAPPDATA%\Docker\wsl\disk\docker_data.vhdx` (can be 15+ GB). To free space on C:, either use Docker Desktop > Settings > Resources > Advanced > *Disk image location*, or move the folder and leave a junction behind. With Docker closed and no WSL running (reboot first if the file is locked), from an **administrator** PowerShell:
+
+```powershell
+wsl --shutdown
+robocopy "$env:LOCALAPPDATA\Docker\wsl" D:\DockerData\wsl /E /COPY:DAT
+Rename-Item "$env:LOCALAPPDATA\Docker\wsl" wsl_old
+New-Item -ItemType Junction -Path "$env:LOCALAPPDATA\Docker\wsl" -Target D:\DockerData\wsl
+```
+Start Docker, check `docker images`, then delete `wsl_old`. SICAS needs no change: it only calls the `docker` CLI.
+
 Docker Desktop must be **running** (whale icon in the tray). If Ollama is in a custom folder, add it to `PATH` the same way;
 to store models on another drive set the user environment variable `OLLAMA_MODELS`. The web panel also searches common
 install folders; add more with the `SICAS_EXTRA_PATH` environment variable (`;`-separated).
@@ -210,6 +220,13 @@ Same command as B5 with one extra flag and a new `--out` folder:
 | Is tamper enforcement needed? | `--methods gated --no-tamper` |
 | Which component transfers? | `--methods gated --components prompt` (then `tools`, `skills`, `retrieval`, `memory`) |
 
+### Running on a zero budget (fast and cheap)
+- **Use Ollama for real runs.** It has no quota, but costs about 10 s per agent run on CPU, so leave it running overnight.
+- **Shrink the experiment** instead of running all four methods: `--methods fixed,gated --seeds 2 --generations 4 --candidates 2` is about 4x less work than B5. Add `reflexion` / `ungated` only if time allows, and skip the ablations (B6) unless needed.
+- **Do the small trial first** (B4) and check its pass rates before anything long. Use the existing `data/he_subset.jsonl`; do not regenerate it.
+- **Gemini's free API tier is too small for a full run.** Measured on this project (Oct 2026): `gemini-3.8-flash` allowed only 20 requests per day, which a single small trial exceeds. A Gemini Pro *app* subscription does not raise API quota; only enabling billing in AI Studio does. Use Gemini for quick checks only, and check usage at https://ai.dev/rate-limit.
+- Stopping is safe: finished generations stay in `runs/<name>/archive`.
+
 ### Using Gemini instead (optional, free tier)
 ```powershell
 # GEMINI_API_KEY is read from .env; use a model id that is currently available in AI Studio
@@ -244,7 +261,8 @@ python -m sicas experiment --llm anthropic:claude-haiku-4-5-20251001 --tasks dat
 | Upload page: "a real LLM needs Docker isolation" | Start Docker Desktop, restart `serve`, or pick the `mock` LLM. |
 | `pytest` at the project root errors on `runs/.../test_visible.py` | Run `python -m pytest tests -q`, not bare `pytest`. |
 | A Main-run button is greyed out | A required item on the Main run tab is red. Fix it with the button next to it, then it unlocks. |
-| `LLM quota exhausted` (HTTP 429) on a Gemini run | The free-tier quota is used up for now. Wait for it to reset, use another key, or switch to Ollama. The run stops instead of scoring empty replies. |
+| `LLM quota exhausted` (HTTP 429) on a Gemini run | The free-tier quota is used up for now (it can be as low as 20 requests/day per model). Wait for it to reset, use another key, enable billing, or switch to Ollama. The run stops instead of scoring empty replies. |
+| Docker data filling C: | See "Docker data on another drive" in Step 0. |
 | Gated run accepts nothing and shows `proposed: 0` | The reflector dropped every candidate. Look for `reflector: candidate N dropped, ...` lines in the job log: unparseable JSON, invalid diff, or duplicate scaffold. |
 | Log shows nothing for a long time | Normal. Use `python -u` so output is unbuffered. |
 | Everything is slow | CPU-only. Reduce `--seeds`, `--generations`, `--candidates`, or use fewer tasks. |
