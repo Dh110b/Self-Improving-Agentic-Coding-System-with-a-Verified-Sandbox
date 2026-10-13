@@ -81,10 +81,14 @@ python -m sicas serve            # open http://127.0.0.1:8766  (python -m sicas 
 Leave the window open; Ctrl+C stops the server (a running job stops with it). This is separate from the control panel
 in Part 0 (port 8765), and both can run at the same time.
 
-1. **Prepare a tasks file** (`.jsonl`, one JSON object per line) with `id`, `prompt`, `entry_point`, `visible_tests`,
-   `hidden_tests` and optionally `split`. About 20+ tasks are needed so train/val/test/regression are all non-empty.
-   Easiest start: `python scripts/convert_evalplus.py ...` (Part B3) produces a valid file.
-2. **Drop it on the page** (or click to choose). The page rejects bad JSON, duplicate ids, missing fields, or too few tasks.
+1. **Add your code (easiest).** On the page, stay on the **I have code files** tab, drop your files (or click
+   *Choose a whole folder*), and press **Turn my code into exercises**. It makes the tasks file for you, shows what it
+   created and why anything was skipped, and loads the result automatically. Supported: Python, C, C++, Java, C#,
+   JavaScript, TypeScript, Go, Rust, Kotlin, Swift, PHP. See "How code becomes exercises" below.
+   *Already have a tasks file?* Use the **I have an exercises file** tab (`.jsonl`, one JSON object per line with `id`,
+   `prompt`, `entry_point`, `visible_tests`, `hidden_tests`, optional `split`; about 20+ tasks).
+2. **Check the list of exercises.** Fewer than 4 usable functions cannot fill the practice/check/test/regression sets;
+   add more files, or fix the skipped ones (the page tells you how).
 3. **Choose settings**: LLM (`mock` for a free dry run, or Claude), method (`gated` is the full system), generations,
    candidates per generation, optional USD budget.
 4. **Click Start improving.** The table fills in live: each generation is accepted or rejected with the change, train/val
@@ -97,8 +101,30 @@ in Part 0 (port 8765), and both can run at the same time.
 | Python only | `mock` LLM (pipeline dry run; numbers are not results) |
 | Docker running + `ANTHROPIC_API_KEY` set before starting the server | `anthropic:...` models; the page refuses a real LLM without Docker |
 
-Notes: localhost only, no login, 5 MB upload limit. The run is on **tasks with tests**; plain code without tests cannot be
-verified. The sample run with the mock LLM took about 30 s (2 generations x 2 candidates).
+Notes: localhost only, no login, 5 MB upload limit. Everything is a **task with tests**; the converter creates the tests
+(below). The sample run with the mock LLM took about 30 s (2 generations x 2 candidates).
+
+### How code becomes exercises
+
+Each function becomes one exercise. The agent only runs Python, so **every exercise is a Python exercise**. The score
+tells you how well the agent can re-create your function from its signature and description.
+
+| Your code | Where the correct answers come from |
+|---|---|
+| **Python** | (1) `>>>` doctests in the docstring, (2) `assert f(...) == ...` lines anywhere in the files you uploaded (also `test_*.py`), (3) your own function, run inside Docker on automatically generated inputs. For (3) the parameters need type hints (`n: int`, `nums: List[int]`) or common names (`n`, `text`, `nums`, ...). |
+| **C, C++, Java, C#, JS, TS, Go, Rust, Kotlin, Swift, PHP** | Nothing is compiled or run. Write the answers in your code as examples, at least 2 per function: `assert(add(2,3)==5);`, `assertEquals(5, add(2,3));`, `EXPECT_EQ(add(2,3), 5);`, `expect(add(2,3)).toBe(5)` or a comment `// add(2,3) => 5`. The exercise asks the agent to port the function to Python. |
+
+Skipped on purpose (reason shown on the page): functions that return nothing, read input/files/network, use randomness or
+time, are generators, take `*args`, or have no usable examples. Helper functions and constants in the same Python file are
+copied into the exercise automatically. Without Docker, your Python code is **not run** unless you tick the "run my
+code on this computer" box (only for code you trust); then only written examples are used.
+
+Terminal version (same converter, no browser):
+
+```powershell
+python -m sicas convert mycode\ other.py Calc.java --out my_tasks.jsonl            # add --allow-unsafe-local if Docker is off
+python -m sicas evolve --tasks my_tasks.jsonl --llm mock --generations 3 --out runs/mine   # or any real --llm
+```
 
 ---
 
@@ -258,6 +284,8 @@ python -m sicas experiment --llm anthropic:claude-haiku-4-5-20251001 --tasks dat
 | Web panel will not open / port in use | Set `SICAS_UI_PORT` to another number (default 8765) and restart `python ui/server.py`. |
 | Upload page: port in use | `python -m sicas serve --port <other>` (default 8766). |
 | Upload page: "leave the ... split empty" | Upload more tasks (about 20+) or set `"split"` on every task. |
+| Upload page: "Turn my code into exercises" gives 0 or few exercises | Read "Why were N functions skipped": add type hints / `assert f(...) == ...` lines (Python) or 2+ written examples per function (other languages). Need at least 4 usable functions. |
+| Converter says "Python code was not run" | Start Docker Desktop, or tick the "run my Python code on this computer" box (code you trust only). |
 | Upload page: "a real LLM needs Docker isolation" | Start Docker Desktop, restart `serve`, or pick the `mock` LLM. |
 | `pytest` at the project root errors on `runs/.../test_visible.py` | Run `python -m pytest tests -q`, not bare `pytest`. |
 | A Main-run button is greyed out | A required item on the Main run tab is red. Fix it with the button next to it, then it unlocks. |

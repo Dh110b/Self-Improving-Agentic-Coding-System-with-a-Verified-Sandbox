@@ -46,7 +46,7 @@ The 60-task subset `data/he_subset.jsonl` is included in the repo; the large `da
 
 | item | state |
 |---|---|
-| Pipeline (agent, sandbox, tamper detector, gate, archive, dashboard, experiments) | implemented, 36 tests |
+| Pipeline (agent, sandbox, tamper detector, gate, archive, dashboard, experiments) | implemented, 42 tests |
 | Docker sandbox | verified on Docker 29.x (no network, read-only mount tests pass) |
 | Mock-LLM demo | works offline; **simulation only, not evidence** |
 | Web control panel | `ui/` - every terminal step as a button, with prerequisite checks and time estimates |
@@ -64,7 +64,7 @@ It has a *Test run* tab (mock LLM) and a *Main run* tab (real model) with prereq
 
 ```powershell
 python -m sicas doctor                                   # environment check
-python -m pytest tests -q                                # 36 tests (the Docker one is skipped if Docker is off)
+python -m pytest tests -q                                # 42 tests (the Docker one is skipped if Docker is off)
 python -m sicas evolve --method gated --out runs/demo    # offline mock demo -> runs/demo/dashboard.html
 python -m sicas experiment --seeds 3 --generations 8 --candidates 4 --out runs/exp   # mock, 4 methods x 3 seeds
 ```
@@ -78,7 +78,26 @@ python -m sicas experiment --seeds 3 --generations 8 --candidates 4 --out runs/e
 python -m sicas serve            # http://127.0.0.1:8766  (use --port to change)
 ```
 
-Drop a tasks `.jsonl` file on the page, choose the LLM / method / generations / candidates / optional USD budget, and
+**Have code instead of a tasks file?** On the page's **I have code files** tab, drop Python, C, C++, Java, C#, JavaScript,
+TypeScript, Go, Rust, Kotlin, Swift or PHP files (or a folder) and press **Turn my code into exercises**: every function
+becomes an exercise with tests, you see what was created and why anything was skipped, and it is loaded automatically.
+Same thing in the terminal:
+
+```powershell
+python -m sicas convert mycode\ Calc.java --out my_tasks.jsonl     # --allow-unsafe-local if Docker is off
+```
+
+How the tests are made (the agent and sandbox are Python-only, so all exercises are Python exercises):
+
+| Your code | Expected outputs come from |
+|---|---|
+| Python | doctests, `assert f(...) == ...` lines in any uploaded file, and your own function run inside Docker on inputs generated from type hints / parameter names |
+| C, C++, Java, C#, JS, TS, Go, Rust, Kotlin, Swift, PHP | examples written in the code (2+ per function), e.g. `assert(add(2,3)==5);`, `assertEquals(5, add(2,3));`, `// add(2,3) => 5`; nothing is compiled or run, the agent ports the function to Python |
+
+Functions that return nothing, use input/files/network/randomness, or lack examples are skipped with a reason; at least 4
+usable functions are needed (20+ is better). Details: [How to run.md](How%20to%20run.md#how-code-becomes-exercises).
+
+**Have a tasks file already?** Use the **I have an exercises file** tab. Drop a tasks `.jsonl` file on the page, choose the LLM / method / generations / candidates / optional USD budget, and
 click **Start improving**. The page shows each generation as accepted or rejected (change, train and val scores, gate
 reasons) while it runs, then the final test/val scores, cost, the improved scaffold, and a link to the full dashboard.
 **Run on built-in sample** needs no file. Runs are saved under `runs/web/<job id>/`.
@@ -89,7 +108,7 @@ omitted, tasks are split by id hash, so upload about 20+ tasks so every split is
 
 - A real LLM (`anthropic:...`) needs Docker running; the page refuses it otherwise. Mock works without Docker.
 - Localhost only, no login, 5 MB upload limit. Do not expose it to a network.
-- Bare code with no tests cannot be verified, so it cannot be uploaded as-is.
+- Code is converted to tasks first (above); the converter only runs your Python code inside Docker unless you tick the "run on this computer" box.
 - This page is separate from the control panel below (`ui/`, port 8765); both can run at once.
 
 ## Real experiment (local model, free)

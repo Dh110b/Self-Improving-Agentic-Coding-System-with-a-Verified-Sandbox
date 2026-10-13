@@ -21,6 +21,7 @@ from .dashboard import build as build_dashboard
 from .evolve import METHODS, EvolveConfig, Evolver
 from .gate import GateConfig
 from .llm import make_llm
+from .convert import convert_sources
 from .sandbox import get_sandbox
 from .scaffold import COMPONENTS
 from .tasks import by_split, load_jsonl, load_toy
@@ -107,6 +108,20 @@ def _start(body: dict) -> str:
     return jid
 
 
+def _convert(body: dict) -> dict:
+    files = [(str(f.get("name") or "file"), str(f.get("content") or "")) for f in body.get("files") or []]
+    if not files:
+        _bad("no files received")
+    sb = get_sandbox("auto")
+    if not sb.isolated and not body.get("trust_local"):
+        sb = None
+    res = convert_sources(files, sb)
+    out = res.summary()
+    out["jsonl"] = res.to_jsonl()
+    out["docker"] = bool(sb and sb.isolated)
+    return out
+
+
 def _status(jid: str) -> dict | None:
     job = JOBS.get(jid)
     if job is None:
@@ -187,14 +202,14 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         if not self._local_only():
             return self._json(403, {"error": "forbidden"})
-        if self.path != "/api/jobs":
+        if self.path not in ("/api/jobs", "/api/convert"):
             return self._json(404, {"error": "not found"})
         n = int(self.headers.get("Content-Length") or 0)
         if n > MAX_UPLOAD:
             return self._json(413, {"error": "file too large (limit 5 MB)"})
         try:
             body = json.loads(self.rfile.read(n) or b"{}")
-            self._json(200, {"id": _start(body)})
+            self._json(200, _convert(body) if self.path == "/api/convert" else {"id": _start(body)})
         except (ValueError, RuntimeError) as e:
             self._json(400, {"error": str(e)})
 
@@ -261,6 +276,9 @@ pre{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:
 @keyframes sl{0%{margin-left:-40%}100%{margin-left:100%}}
 details summary{cursor:pointer;color:var(--acc);font-weight:600;margin-top:12px}
 code{background:var(--bg);padding:1px 6px;border-radius:5px}
+.tabs{display:flex;gap:8px;margin:10px 0 14px}.tab{background:transparent;color:var(--fg);border:1px solid var(--line);font-weight:500;padding:8px 16px}.tab.on{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;border-color:transparent}
+#cdrop{border:2px dashed var(--line);border-radius:12px;padding:30px 16px;text-align:center;cursor:pointer;color:var(--mut);background:var(--bg)}#cdrop.over,#cdrop:hover{border-color:var(--acc);color:var(--fg)}#cdrop b{color:var(--fg);font-size:16px}#cdrop.has{border-style:solid;border-color:var(--okfg)}
+.chk{display:flex;gap:8px;align-items:flex-start;font-weight:400;font-size:13px;color:var(--mut);margin-top:12px}.chk input{width:auto;margin-top:3px}.errtxt{color:var(--badfg);margin-top:10px;white-space:pre-wrap}
 </style></head><body><main>
 
 <div class="hero">
@@ -269,14 +287,41 @@ code{background:var(--bg);padding:1px 6px;border-radius:5px}
 </div>
 
 <div class="card">
-  <h2><span class="num">1</span>Choose your exercises</h2>
-  <p class="sub">A file where every line is one exercise (a <code>.jsonl</code> file). Don&rsquo;t have one? Use the example, or just press <b>Try it with the built-in sample</b> below.</p>
-  <div id="drop"><b>Drop your exercises file here</b><br>or click to choose one<div id="fname" style="margin-top:8px"></div></div>
-  <input type="file" id="file" accept=".jsonl,.json,.txt" class="hide">
-  <div class="row" style="margin-top:12px"><a class="btn ghost" href="/example.jsonl" download>Download an example file</a>
-    <span class="help">about 20 real exercises &mdash; open it to see the format, or upload it as-is</span></div>
-  <details><summary>What should each line contain?</summary>
-    <p class="help" style="font-size:13px">Each line is a small JSON object with: <code>id</code> (a name), <code>prompt</code> (the function and what it should do), <code>entry_point</code> (the function&rsquo;s name), <code>visible_tests</code> (examples the assistant can see), <code>hidden_tests</code> (secret tests used only for judging) and optionally <code>split</code>. Use at least ~20 exercises so there is enough to practise on, check on, and test on.</p></details>
+  <h2><span class="num">1</span>Give it something to practise on</h2>
+  <div class="tabs"><button class="tab on" id="tabCode">I have code files</button><button class="tab" id="tabTasks">I have an exercises file</button></div>
+
+  <div id="paneCode">
+    <p class="sub">Drop your code (Python, C, C++, Java, C#, JavaScript, TypeScript, Go, Rust, Kotlin, Swift or PHP). Each function becomes an exercise with tests, made for you automatically.</p>
+    <div id="cdrop"><b>Drop your code files here</b><br>or click to choose files<div id="cnames" style="margin-top:8px"></div></div>
+    <input type="file" id="cfiles" multiple class="hide">
+    <div class="row" style="margin-top:10px"><button class="ghost" id="cfolder">Choose a whole folder instead</button>
+      <input type="file" id="cdir" webkitdirectory class="hide"></div>
+    <label class="chk"><input type="checkbox" id="trust"> If Docker is not running, let it run my Python code on this computer to learn the correct answers (only tick this for code you trust)</label>
+    <div class="row"><button id="convert" disabled>Turn my code into exercises</button></div>
+    <div id="cerr" class="errtxt"></div>
+    <div id="cres" class="hide">
+      <div class="stats" id="cstats"></div>
+      <div class="wrap"><table><thead><tr><th>Exercise</th><th>Language</th><th>Tests</th><th>Where the tests came from</th></tr></thead><tbody id="ctasks"></tbody></table></div>
+      <div id="cwarn"></div>
+      <details id="cskipwrap"><summary id="cskipsum"></summary><div class="wrap"><table><tbody id="cskip"></tbody></table></div></details>
+      <div class="row"><a class="btn ghost" id="cdl" download="my_tasks.jsonl">Download the exercises file</a><span class="help">already loaded &mdash; just press <b>Start improving</b> below</span></div>
+    </div>
+    <details><summary>How does this work, and what are the limits?</summary>
+      <div class="help" style="font-size:13px">
+      <b>Python:</b> every top-level function becomes an exercise. The correct answers come from examples in your code (<code>&gt;&gt;&gt;</code> doctests, <code>assert f(1) == 2</code> lines) and from your function itself, run safely in Docker on automatically generated inputs (needs type hints such as <code>n: int</code>, or common parameter names such as <code>nums</code>, <code>text</code>).<br>
+      <b>Other languages:</b> nothing is compiled or run. The assistant is asked to <i>port</i> each function to Python, so the answers must be written in your code as examples: <code>assert(add(2,3)==5);</code>, <code>assertEquals(5, add(2,3));</code> or a comment <code>// add(2,3) =&gt; 5</code>. At least 2 per function.<br>
+      Functions that read input, use files/network/randomness, return nothing, or have no usable examples are skipped, and the reason is shown. You need at least 4 usable functions in total (20+ is better). Test files (<code>test_*.py</code>, <code>*Test.java</code>, ...) are not turned into exercises but their examples are used.</div></details>
+  </div>
+
+  <div id="paneTasks" class="hide">
+    <p class="sub">A file where every line is one exercise (a <code>.jsonl</code> file). Don&rsquo;t have one? Use the example, or just press <b>Try it with the built-in sample</b> below.</p>
+    <div id="drop"><b>Drop your exercises file here</b><br>or click to choose one<div id="fname" style="margin-top:8px"></div></div>
+    <input type="file" id="file" accept=".jsonl,.json,.txt" class="hide">
+    <div class="row" style="margin-top:12px"><a class="btn ghost" href="/example.jsonl" download>Download an example file</a>
+      <span class="help">about 20 real exercises &mdash; open it to see the format, or upload it as-is</span></div>
+    <details><summary>What should each line contain?</summary>
+      <p class="help" style="font-size:13px">Each line is a small JSON object with: <code>id</code> (a name), <code>prompt</code> (the function and what it should do), <code>entry_point</code> (the function&rsquo;s name), <code>visible_tests</code> (examples the assistant can see), <code>hidden_tests</code> (secret tests used only for judging) and optionally <code>split</code>. Use at least ~20 exercises so there is enough to practise on, check on, and test on.</p></details>
+  </div>
 </div>
 
 <div class="card" id="setup">
@@ -323,9 +368,39 @@ $("drop").onclick=()=>$("file").click();$("file").onchange=e=>pick(e.target.file
 $("drop").ondragover=e=>{e.preventDefault();$("drop").classList.add("over")};
 $("drop").ondragleave=()=>$("drop").classList.remove("over");
 $("drop").ondrop=e=>{e.preventDefault();$("drop").classList.remove("over");pick(e.dataTransfer.files[0])};
+
+const CODE_EXT=/\.(py|c|h|cpp|cc|cxx|hpp|java|cs|js|mjs|ts|go|rs|kt|swift|php)$/i,SKIPD=/(^|\/)(node_modules|\.git|venv|\.venv|__pycache__|build|dist|target|out)(\/|$)/;
+let codeFiles=[];
+function tab(code){$("paneCode").classList.toggle("hide",!code);$("paneTasks").classList.toggle("hide",code);$("tabCode").classList.toggle("on",code);$("tabTasks").classList.toggle("on",!code)}
+$("tabCode").onclick=()=>tab(true);$("tabTasks").onclick=()=>tab(false);
+function addCode(list){
+  const fs=[...list].filter(f=>CODE_EXT.test(f.name)&&!SKIPD.test(f.webkitRelativePath||f.name)&&f.size<=400000);
+  if(!fs.length){$("cerr").textContent="No supported code files found (Python, C, C++, Java, C#, JavaScript, TypeScript, Go, Rust, Kotlin, Swift, PHP; each under 400 KB).";return}
+  $("cerr").textContent="";
+  Promise.all(fs.map(f=>new Promise(res=>{const r=new FileReader();r.onload=()=>res({name:f.webkitRelativePath||f.name,content:r.result});r.readAsText(f)}))).then(a=>{
+    codeFiles=a;$("cdrop").classList.add("has");$("cnames").textContent=a.length+" file(s): "+a.slice(0,6).map(x=>x.name).join(", ")+(a.length>6?", ...":"");$("convert").disabled=false;$("cres").classList.add("hide")})}
+$("cdrop").onclick=()=>$("cfiles").click();$("cfiles").onchange=e=>addCode(e.target.files);
+$("cfolder").onclick=()=>$("cdir").click();$("cdir").onchange=e=>addCode(e.target.files);
+$("cdrop").ondragover=e=>{e.preventDefault();$("cdrop").classList.add("over")};$("cdrop").ondragleave=()=>$("cdrop").classList.remove("over");
+$("cdrop").ondrop=e=>{e.preventDefault();$("cdrop").classList.remove("over");addCode(e.dataTransfer.files)};
+$("convert").onclick=async()=>{
+  $("cerr").textContent="";$("convert").disabled=true;$("convert").textContent="Converting... (can take a minute)";
+  try{const r=await fetch("/api/convert",{method:"POST",body:JSON.stringify({files:codeFiles,trust_local:$("trust").checked})});const j=await r.json();
+    if(!r.ok)throw new Error(j.error);showConv(j)}
+  catch(e){$("cerr").textContent=e.message}
+  $("convert").disabled=false;$("convert").textContent="Turn my code into exercises"};
+function showConv(j){
+  $("cres").classList.remove("hide");
+  $("cstats").innerHTML=`<div><b>${j.n_tasks}</b><span>exercises created</span></div><div><b>${j.n_skipped}</b><span>functions skipped</span></div>`;
+  $("ctasks").innerHTML=j.tasks.map(t=>`<tr><td>${esc(t.id)}</td><td>${esc(t.language)}</td><td>${t.n_tests}</td><td>${esc(t.tests_from.replace("given","from your code").replace("recorded","recorded from your function"))}</td></tr>`).join("");
+  $("cwarn").innerHTML=j.warnings.map(w=>`<div class="note">${esc(w)}</div>`).join("");
+  $("cskipsum").textContent=`Why were ${j.n_skipped} function(s) skipped?`;$("cskipwrap").classList.toggle("hide",!j.n_skipped);
+  $("cskip").innerHTML=j.skipped.map(k=>`<tr><td>${esc(k.file.split(/[\\/]/).pop())}${k.name?" : "+esc(k.name):""}</td><td>${esc(k.reason)}</td></tr>`).join("");
+  if(j.n_tasks){content=j.jsonl;fname="converted from code ("+j.n_tasks+" exercises)";$("cdl").href="data:application/x-ndjson;charset=utf-8,"+encodeURIComponent(j.jsonl)}
+  else{content=null;$("cerr").textContent="No usable exercises were found. Open the list of skipped functions below to see what to add."}}
 async function start(sample){
   $("err").textContent="";
-  if(!sample&&!content){$("err").textContent="Please choose an exercises file first (step 1), or press \"Try it with the built-in sample\".";return}
+  if(!sample&&!content){$("err").textContent="Please add your code or an exercises file first (step 1), or press \"Try it with the built-in sample\".";return}
   $("go").disabled=$("sample").disabled=true;
   const body={sample,content,filename:fname,llm:$("llm").value,method:$("method").value,generations:+$("gens").value,candidates:+$("cands").value,budget_usd:$("usd").value};
   try{const r=await fetch("/api/jobs",{method:"POST",body:JSON.stringify(body)});const j=await r.json();

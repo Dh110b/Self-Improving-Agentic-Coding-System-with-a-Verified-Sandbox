@@ -67,6 +67,12 @@ def main(argv=None):
     w = sub.add_parser("serve", help="web UI: upload tasks and start improving")
     w.add_argument("--host", default="127.0.0.1")
     w.add_argument("--port", type=int, default=8766)
+    c = sub.add_parser("convert", help="turn your code files (Python, C, Java, ...) into a tasks JSONL")
+    c.add_argument("paths", nargs="+", help="source files and/or folders")
+    c.add_argument("--out", default="my_tasks.jsonl")
+    c.add_argument("--sandbox", default="auto", choices=["auto", "docker", "local"])
+    c.add_argument("--allow-unsafe-local", action="store_true",
+                   help="if Docker is unavailable, run your Python code on this computer to record expected outputs")
     r = sub.add_parser("rollback")
     r.add_argument("run_dir")
     r.add_argument("--gen", type=int, required=True)
@@ -94,6 +100,27 @@ def main(argv=None):
         s = run_experiment(tasks, llm, sb, a.out, a.methods.split(","), range(a.seeds), a.generations,
                            a.candidates, a.budget_tokens, a.budget_usd, a.components.split(","), gate)
         print("\n" + (Path(a.out) / "summary.md").read_text())
+    elif a.cmd == "convert":
+        from .convert import collect_files, convert_sources
+        sb = get_sandbox(a.sandbox)
+        if not sb.isolated and not a.allow_unsafe_local:
+            sb = None
+            print("Docker is not available: your code will NOT be run. Only examples written in it are used. "
+                  "Start Docker, or pass --allow-unsafe-local for code you trust.", file=sys.stderr)
+        files = collect_files(a.paths)
+        if not files:
+            sys.exit("no supported source files found")
+        res = convert_sources(files, sb)
+        Path(a.out).write_text(res.to_jsonl(), encoding="utf-8")
+        print(f"{len(res.tasks)} task(s) written to {a.out}; {len(res.skipped)} skipped")
+        for t in res.summary()["tasks"]:
+            print(f"  + {t['id']:<32} {t['language']:<10} {t['n_tests']:>2} tests ({t['tests_from']}) -> {t['split']}")
+        for k in res.skipped:
+            print(f"  - {Path(k['file']).name}:{k['name'] or '*'}  {k['reason']}")
+        for w in res.warnings:
+            print("  ! " + w)
+        if len(res.tasks) < 4:
+            sys.exit(1)
     elif a.cmd == "serve":
         from .web import serve
         serve(a.host, a.port)
