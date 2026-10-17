@@ -51,6 +51,7 @@ The 60-task subset `data/he_subset.jsonl` is included in the repo; the large `da
 | Mock-LLM demo | works offline; **simulation only, not evidence** |
 | Web control panel | `ui/` - every terminal step as a button, with prerequisite checks and time estimates |
 | Upload & improve page | `python -m sicas serve` - upload your own tasks JSONL, start a run, watch generations live |
+| Code-to-tasks converter | `python -m sicas convert` or the upload page's code tab - Python, C, C++, Java, C#, JS, TS, Go, Rust, Kotlin, Swift, PHP files -> tasks JSONL |
 | Real model | Ollama + `qwen2.5-coder:1.5b` (local, via Ollama), smoke-tested on toy and HumanEval+ tasks |
 | HumanEval+ subset (60 tasks, validated) | `data/he_subset.jsonl` (20 train / 15 val / 15 test / 10 regression) |
 | Pilot real-model run | `runs/he_real` (4 methods x 3 seeds, 15 test tasks per seed): fixed, reflexion and gated all 0.511 verified pass@1, ungated 0.467; CIs overlap, so no method is separable yet. Gated accepted 0 changes: the reflector returned no candidate in 14 of 15 generations (cause under investigation, see Troubleshooting) |
@@ -151,8 +152,11 @@ The CLI refuses to run a real LLM's code without Docker unless `--allow-unsafe-l
 | `sicas/llm.py` | Anthropic / Gemini / Ollama (OpenAI-compatible) / mock clients + cost meter |
 | `sicas/mock.py`, `toy_tasks.py` | offline simulation + 28-task toy benchmark |
 | `scripts/convert_evalplus.py`, `scripts/make_subset.py` | HumanEval+/MBPP+ -> JSONL; validated split subset |
+| `sicas/convert.py` | code files (12 languages) -> tasks JSONL; tests from doctests, asserts, or in-code examples; behind `python -m sicas convert` |
 | `sicas/web.py` | upload page + background job runner behind `python -m sicas serve` (stdlib only) |
 | `ui/server.py`, `ui/index.html`, `start_ui.bat` | local web control panel (stdlib HTTP server + single-page UI) |
+| `tests/` | 42 tests: sandbox, scaffold/archive, tamper detector, evaluator/gate, converter |
+| `Dockerfile.sandbox` | optional hardened image definition; by default the sandbox uses the stock `python:3.11-slim` image |
 | `docs/DESIGN.md` | design, threat model, experiment table, limitations |
 
 ## What the gate guarantees, and what it does not

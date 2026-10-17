@@ -18,13 +18,13 @@ Docker/Ollama helpers target Windows.
 | The code | everything | `git clone <repo-url>`, then `cd` into it |
 | Virtual env (recommended) | clean installs | `python -m venv .venv` then `.venv\Scripts\Activate.ps1` |
 | Python packages | tests, dataset, Claude | `python -m pip install -r requirements.txt` (all optional; the core is stdlib-only) |
-| Docker Desktop | real-LLM runs, sandbox tests | https://www.docker.com/products/docker-desktop/ - start it; image `python:3.11-slim` is pulled on first use (or `docker pull python:3.11-slim`) |
+| Docker Desktop | real-LLM runs, sandbox tests | https://www.docker.com/products/docker-desktop/ - start it; image `python:3.11-slim` is pulled on first use (or `docker pull python:3.11-slim`); `Dockerfile.sandbox` is an optional hardened variant, not required |
 | Ollama + model | free local real runs | https://ollama.com/download, then `ollama pull qwen2.5-coder:1.5b` (~1 GB) |
 | Gemini API key | optional, free tier | put `GEMINI_API_KEY=...` in `.env` (copy `.env.example`; `.env` is git-ignored) |
 | Anthropic API key | optional, Claude runs (billed) | `$env:ANTHROPIC_API_KEY = "your-key"` |
 
 **Minimum to try the project: Python only.** Part A (offline mock demo) and Parts 0/U with the `mock` LLM need nothing else.
-Check your setup any time with `python -m sicas doctor`.
+Check your setup any time with `python -m sicas doctor`; verify the install with `python -m pytest tests -q` (42 tests; the Docker one is skipped if Docker is off).
 
 You can do everything below either **in the web control panel (Part 0, easiest)** or **in the terminal (Parts A and B)**.
 To improve **your own coding tasks** by uploading a file, see **Part U** (upload page).
